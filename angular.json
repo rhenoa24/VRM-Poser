@@ -70,6 +70,8 @@
           },
           "configurations": {
             "production": {
+              "outputPath": "dist/VRM-Poser",
+              "baseHref": "/VRM-Poser",
               "budgets": [
                 {
                   "type": "initial",
