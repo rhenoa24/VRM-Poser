@@ -12,11 +12,12 @@
 
 .panel {
     position: absolute;
-    inset: 0 0 0 auto;
+    bottom: 0;
     z-index: 6;
     display: grid;
-    grid-template-columns: 68px minmax(0, 1fr);
-    width: min(420px, calc(100vw - 12px));
+    grid-template-columns: 60px minmax(0, 1fr);
+    width: 100%;
+    height: min(250px, calc(100vh - 12px));
     box-sizing: border-box;
     overflow: hidden;
     border-left: 1px solid #2b3040;
@@ -40,7 +41,6 @@
 
 .section-button {
     display: flex;
-    min-height: 58px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -52,6 +52,7 @@
     font: inherit;
     font-size: 9px;
     cursor: pointer;
+    padding-bottom: 3px;
 
     &:hover {
         background: #232939;
@@ -66,7 +67,7 @@
 }
 
 .section-icon {
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
 }
 
@@ -105,25 +106,6 @@
     font-size: 24px;
     color: #14171f;
     background: linear-gradient(135deg, #3a415a, #131720);
-}
-
-.panel-close {
-    flex: none;
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    font-size: 16px;
-}
-
-.menu-toggle {
-    position: absolute;
-    z-index: 5;
-    top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    font-size: 21px;
 }
 
 h1 {
@@ -200,6 +182,25 @@ h2 {
 
     &.wide {
         width: 100%;
+    }
+
+    &.panel-close {
+        flex: none;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        font-size: 16px;
+    }
+
+    &.menu-toggle {
+        position: absolute;
+        z-index: 5;
+        top: max(12px, env(safe-area-inset-top));
+        right: max(12px, env(safe-area-inset-right));
+        width: 48px;
+        height: 48px;
+        padding: 0;
+        font-size: 21px;
     }
 }
 
