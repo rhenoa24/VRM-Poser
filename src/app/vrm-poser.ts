@@ -365,7 +365,7 @@ export class VrmStudio {
         this.gizmo.setSpace('world');
         // Larger ring + picker on touch screens, where there is no hover and fingers
         // are much less precise than a mouse.
-        this.gizmo.setSize(this.coarsePointer ? 1.35 : 0.85);
+        this.gizmo.setSize(this.coarsePointer ? 0.85 : 1.00);
         this.gizmoHelper = this.gizmo.getHelper();
         this.gizmoHelper.visible = false;
         this.scene.add(this.gizmoHelper);
@@ -1190,14 +1190,26 @@ export class VrmStudio {
             ((event.clientX - rect.left) / rect.width) * 2 - 1,
             -((event.clientY - rect.top) / rect.height) * 2 + 1,
         );
+        this.scene.updateMatrixWorld(true);
         this.raycaster.setFromCamera(this.pointer, this.activeCamera);
-        const hits = this.raycaster.intersectObjects(this.markerGroup.children, false);
-        if (hits.length > 0) {
-            this.activeSlot = hits[0].object.userData['slot'] as SlotId;
-            this.selectedBone = hits[0].object.userData['boneKey'] as BoneKey;
+        const markerHits = this.raycaster.intersectObjects(this.markerGroup.children, false);
+        if (markerHits.length > 0) {
+            this.activeSlot = markerHits[0].object.userData['slot'] as SlotId;
+            this.selectedBone = markerHits[0].object.userData['boneKey'] as BoneKey;
             this.syncGizmo();
             this.emitInfo();
             this.callbacks.onSelection(this.activeSlot, this.selectedBone);
+            return;
+        }
+
+        const gizmoMeshes: THREE.Object3D[] = [];
+        this.gizmoHelper.traverseVisible((object) => {
+            const mesh = object as THREE.Mesh;
+            if (mesh.isMesh) gizmoMeshes.push(mesh);
+        });
+        if (this.raycaster.intersectObjects(gizmoMeshes, false).length === 0) {
+            this.gizmo.detach();
+            this.gizmoHelper.visible = false;
         }
     };
 
@@ -1240,7 +1252,7 @@ export class VrmStudio {
     };
 
     private updateMarkers(): void {
-        const size = Math.max(this.radius * (this.coarsePointer ? 0.04: 0.02), 0.004);
+        const size = Math.max(this.radius * (this.coarsePointer ? 0.02: 0.04), 0.004);
         for (const marker of this.markerGroup.children) {
             const id = marker.userData['slot'] as SlotId;
             const bone = marker.userData['boneKey'] as BoneKey;
