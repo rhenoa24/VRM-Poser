@@ -1,264 +1,282 @@
 <div class="app">
   <aside class="panel" id="side-panel" [hidden]="!panelOpen()">
     <nav class="section-nav" aria-label="Control sections">
-      <button type="button" class="section-button" [class.active]="activeSection() === 'models'" [attr.aria-current]="activeSection() === 'models' ? 'page' : null" (click)="selectSection('models')" aria-label="Models">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'models'"
+        [attr.aria-current]="activeSection() === 'models' ? 'page' : null" (click)="selectSection('models')"
+        aria-label="Models">
         <span class="section-icon" aria-hidden="true">▣</span><span>Models</span>
       </button>
-      <button type="button" class="section-button" [class.active]="activeSection() === 'pose'" [attr.aria-current]="activeSection() === 'pose' ? 'page' : null" (click)="selectSection('pose')" aria-label="Pose">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'pose'"
+        [attr.aria-current]="activeSection() === 'pose' ? 'page' : null" (click)="selectSection('pose')"
+        aria-label="Pose">
         <span class="section-icon" aria-hidden="true">↻</span><span>Pose</span>
       </button>
-      <button type="button" class="section-button" [class.active]="activeSection() === 'face'" [attr.aria-current]="activeSection() === 'face' ? 'page' : null" (click)="selectSection('face')" aria-label="Face">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'face'"
+        [attr.aria-current]="activeSection() === 'face' ? 'page' : null" (click)="selectSection('face')"
+        aria-label="Face">
         <span class="section-icon" aria-hidden="true">☺</span><span>Face</span>
       </button>
-      <button type="button" class="section-button" [class.active]="activeSection() === 'position'" [attr.aria-current]="activeSection() === 'position' ? 'page' : null" (click)="selectSection('position')" aria-label="Position">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'position'"
+        [attr.aria-current]="activeSection() === 'position' ? 'page' : null" (click)="selectSection('position')"
+        aria-label="Position">
         <span class="section-icon" aria-hidden="true">⌖</span><span>Position</span>
       </button>
-      <button type="button" class="section-button" [class.active]="activeSection() === 'camera'" [attr.aria-current]="activeSection() === 'camera' ? 'page' : null" (click)="selectSection('camera')" aria-label="Camera">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'camera'"
+        [attr.aria-current]="activeSection() === 'camera' ? 'page' : null" (click)="selectSection('camera')"
+        aria-label="Camera">
         <span class="section-icon" aria-hidden="true">◉</span><span>Camera</span>
       </button>
     </nav>
     <div class="panel-content">
-    <header class="brand">
-      <div class="logo">🍓</div>
-      <div style="flex: 1">
-        <h1>VRM Poser</h1>
-        <p>Character Face Reference</p>
-      </div>
-      <button type="button" class="btn panel-close" (click)="togglePanel()" aria-label="Close controls" aria-expanded="true"
-        aria-controls="side-panel">✕</button>
-    </header>
-
-    <section class="block" [hidden]="activeSection() !== 'models'">
-      <h2>Models <small>A + B side by side</small></h2>
-      @for (slot of slots; track slot) {
-      <div class="slot-card" [class.active]="activeSlot() === slot">
-        <div class="slot-head">
-          <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
-          <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
-          <span class="slot-version">{{ slotInfo(slot).version }}</span>
+      <header class="brand">
+        <div class="logo">🍓</div>
+        <div style="flex: 1">
+          <h1>VRM Poser</h1>
+          <p>Character Face Reference</p>
         </div>
-        <div class="row saved-model-row">
-          <label class="saved-model-label" [attr.for]="'saved-model-' + slot">Saved model</label>
-          <select [id]="'saved-model-' + slot" [value]="savedModels()[slot]" (change)="setSavedModel(slot, $event)">
-            @for (model of savedModelsList; track model.fileName) {
-            <option [value]="model.fileName">{{ model.name }}</option>
-            }
-          </select>
-          <button type="button" class="btn small" (click)="loadSavedModel(slot)" [disabled]="busy()">Load saved</button>
+        <button type="button" class="btn panel-close" (click)="togglePanel()" aria-label="Close controls"
+          aria-expanded="true" aria-controls="side-panel">✕</button>
+      </header>
+
+      <section class="block" [hidden]="activeSection() !== 'models'">
+        <h2>Models <small>A + B side by side</small></h2>
+        <div class="row">
+          @for (slot of slots; track slot) {
+          <div class="slot-card" [class.active]="activeSlot() === slot">
+            <div class="slot-head">
+              <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
+              <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
+              <span class="slot-version">{{ slotInfo(slot).version }}</span>
+            </div>
+            <div class="row saved-model-row">
+              <label class="saved-model-label" [attr.for]="'saved-model-' + slot">Saved model</label>
+              <select [id]="'saved-model-' + slot" [value]="savedModels()[slot]" (change)="setSavedModel(slot, $event)">
+                @for (model of savedModelsList; track model.fileName) {
+                <option [value]="model.fileName">{{ model.name }}</option>
+                }
+              </select>
+              <button type="button" class="btn small" (click)="loadSavedModel(slot)" [disabled]="busy()">Load
+                saved</button>
+              <label [attr.for]="'file-' + slot" class="btn primary">Load {{ slot }}</label>
+              <input [id]="'file-' + slot" type="file" accept=".vrm,.glb,.gltf" (change)="onFile(slot, $event)"
+                hidden />
+              <button type="button" class="btn" (click)="clearSlot(slot)">Clear</button>
+            </div>
+          </div>
+          }
         </div>
         <div class="row">
-          <label [attr.for]="'file-' + slot" class="btn primary">Load {{ slot }}</label>
-          <input [id]="'file-' + slot" type="file" accept=".vrm,.glb,.gltf" (change)="onFile(slot, $event)" hidden />
-          <button type="button" class="btn" (click)="clearSlot(slot)">Clear</button>
+          <button type="button" class="btn" (click)="duplicateAtoB()">Duplicate A → B</button>
         </div>
-        <p class="slot-bones">
-          {{ slotInfo(slot).bonesFound.join(', ') || 'no bones' }} · {{ slotInfo(slot).mode }}
-        </p>
-      </div>
-      }
-      <div class="row">
-        <button type="button" class="btn" (click)="duplicateAtoB()">Duplicate A → B</button>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="loadTemplates()" [disabled]="busy()">Load selected for A + B</button>
-      </div>
-      <div class="slider-row compact">
-        <label for="spacing">Head spacing</label>
-        <input id="spacing" type="range" min="0.6" max="4" step="0.05" [value]="spacing()" (input)="setSpacing($event)" />
-      </div>
-      <p class="hint">Drag-and-drop a file anywhere on the viewport to load it into the active slot.</p>
-      @if (info().message) {
-      <p class="note">{{ info().message }}</p>
-      }
-    </section>
-
-    <section class="block" [hidden]="activeSection() !== 'pose'">
-      <h2>Pose <small>head &amp; neck only</small></h2>
-      <div class="segmented">
-        @for (slot of slots; track slot) {
-        <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-          Head {{ slot }}
-        </button>
+        <div class="row">
+          <button type="button" class="btn" (click)="loadTemplates()" [disabled]="busy()">Load selected for A +
+            B</button>
+        </div>
+        <div class="slider-row compact">
+          <label for="spacing">Head spacing</label>
+          <input id="spacing" type="range" min="0.6" max="4" step="0.05" [value]="spacing()"
+            (input)="setSpacing($event)" />
+        </div>
+        <p class="hint">Drag-and-drop a file anywhere on the viewport to load it into the active slot.</p>
+        @if (info().message) {
+        <p class="note">{{ info().message }}</p>
         }
-      </div>
-      <div class="segmented bone-select">
-        @for (bone of bones; track bone.id) {
-        <button type="button" [class.active]="selected() === bone.id" [disabled]="!activeInfo().bonesFound.includes(bone.id)"
-          (click)="selectBone(bone.id)">
-          {{ bone.label }}
-        </button>
-        }
-      </div>
-      <label class="check">
-        <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
-        <span>Look at Camera · Model {{ activeSlot() }}</span>
-      </label>
-      <div class="row">
-        <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
-      </div>
-      <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.</p>
-      @for (axis of axes; track axis) {
-      <div class="slider-row">
-        <label [attr.for]="'slider-' + axis">{{ axisLabel(axis) }}</label>
-        <input [id]="'slider-' + axis" type="range" min="-90" max="90" step="1"
-          [value]="pose()[activeSlot()][selected()][axis]" (input)="setAngle(axis, $event)" />
-        <input class="num" type="number" min="-180" max="180" step="1" [attr.aria-label]="axisLabel(axis) + ' degrees'"
-          [value]="round(pose()[activeSlot()][selected()][axis])" (change)="setAngle(axis, $event)" />
-      </div>
-      }
-      <div class="row">
-        <button type="button" class="btn" (click)="resetPose()">Reset active</button>
-        <button type="button" class="btn" (click)="resetBothPoses()">Reset both</button>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="faceEachOther()">Face each other</button>
-        <button type="button" class="btn" (click)="mirrorAtoB()">Mirror A → B</button>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="savePose()">Save composition</button>
-        <label for="pose-file" class="btn">Load composition</label>
-        <input id="pose-file" type="file" accept=".json,application/json" (change)="onPoseFile($event)" hidden />
-      </div>
-      <label class="check">
-        <input type="checkbox" [checked]="gizmoOn()" (change)="setGizmo($event)" />
-        <span>3D rotate gizmo + joint markers</span>
-      </label>
-      <p class="hint">
-        Only <strong>2 posing bones per head</strong> are registered — no gizmos on arms, spine or
-        legs. Marker colours: A = orange/teal, B = pink/blue. Click one to switch head + bone.
-      </p>
       </section>
 
-    <section class="block" [hidden]="activeSection() !== 'position'">
-      <h2>Position <small>move each head · XYZ</small></h2>
-      <div class="segmented">
-        @for (slot of slots; track slot) {
-        <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-          Head {{ slot }}
-        </button>
-        }
-      </div>
-      <div class="slider-row compact model-scale-row">
-        <label for="model-scale">Model {{ activeSlot() }} scale</label>
-        <input id="model-scale" type="range" min="0.25" max="2.5" step="0.01"
-          [value]="modelScales()[activeSlot()]" (input)="setModelScale($event)" />
-        <input class="num scale-num" type="number" min="0.25" max="2.5" step="0.01"
-          aria-label="Model scale" [value]="modelScales()[activeSlot()]" (change)="setModelScaleNumber($event)" />
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="resetModelScale()">Reset Model {{ activeSlot() }} scale ({{ activeSlot() === 'A' ? '0.9×' : '1×' }})</button>
-      </div>
-      <p class="hint">Scale each model independently without changing the saved VRM.</p>
-      @for (axis of axes; track axis) {
-      <div class="slider-row">
-        <label [attr.for]="'offset-' + axis">{{ positionLabel(axis) }}</label>
-        <input [id]="'offset-' + axis" type="range" [min]="-maxOffset" [max]="maxOffset" step="0.05"
-          [value]="info().offsets[activeSlot()][axis]" (input)="setOffset(axis, $event)" />
-        <input class="num" type="number" [min]="-maxOffset" [max]="maxOffset" step="0.05"
-          [attr.aria-label]="positionLabel(axis)" [value]="round2(info().offsets[activeSlot()][axis])"
-          (change)="setOffset(axis, $event)" />
-      </div>
-      }
-      <div class="row">
-        <button type="button" class="btn" (click)="resetPositions()">Reset positions</button>
-        <button type="button" class="btn" (click)="mirrorPositions()">Mirror A → B</button>
-      </div>
-      
-      </section>
-
-    <section class="block" [hidden]="activeSection() !== 'camera'">
-      <h2>Camera</h2>
-      <div class="presets">
-        @for (preset of presets; track preset.id) {
-        <button type="button" class="btn small" (click)="setPreset(preset.id)">{{ preset.label }}</button>
-        }
-      </div>
-      <div class="segmented projection">
-        <button type="button" [class.active]="projection() === 'perspective'" (click)="setProjection('perspective')">
-          Perspective
-        </button>
-        <button type="button" [class.active]="projection() === 'orthographic'" (click)="setProjection('orthographic')">
-          Orthographic
-        </button>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="frameHeads()">Frame both heads</button>
-        <button type="button" class="btn" (click)="frameHead()">Zoom to active</button>
-      </div>
-      <div class="row">
-        <button type="button" class="btn" (click)="frameModel()">Frame whole model</button>
-      </div>
-      <button type="button" class="btn primary wide" (click)="orthoHeadView()">
-        Ortho couple view (3/4)
-      </button>
-      <p class="hint">Orthographic removes perspective distortion — ideal for anime faces. Scroll to zoom.</p>
-
-      <p class="sub touch-title">Touch navigation</p>
-      <div class="touch-row">
-        <span class="touch-label">1 finger</span>
-        <div class="segmented mini">
-          <button type="button" [class.active]="oneFinger() === 'rotate'" (click)="setOneFinger('rotate')">Rotate</button>
-          <button type="button" [class.active]="oneFinger() === 'pan'" (click)="setOneFinger('pan')">Pan up/down</button>
+      <section class="block" [hidden]="activeSection() !== 'pose'">
+        <h2>Pose <small>head &amp; neck only</small></h2>
+        <div class="segmented">
+          @for (slot of slots; track slot) {
+          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Head {{ slot }}
+          </button>
+          }
         </div>
-      </div>
-      <div class="touch-row">
-        <span class="touch-label">2 fingers</span>
-        <div class="segmented mini">
-          <button type="button" [class.active]="twoFingers() === 'zoomPan'" (click)="setTwoFingers('zoomPan')">Zoom +
-            pan</button>
-          <button type="button" [class.active]="twoFingers() === 'zoomRotate'" (click)="setTwoFingers('zoomRotate')">Zoom +
-            rotate</button>
+        <div class="segmented bone-select">
+          @for (bone of bones; track bone.id) {
+          <button type="button" [class.active]="selected() === bone.id"
+            [disabled]="!activeInfo().bonesFound.includes(bone.id)" (click)="selectBone(bone.id)">
+            {{ bone.label }}
+          </button>
+          }
         </div>
-      </div>
-      <p class="hint">
-        Pinch = zoom · one finger = orbit (or vertical pan) · two fingers together = pan.
-        The rotate gizmo and joint markers are draggable/tappable by touch too.
-      </p>
-
-      <div class="row">
-        <label class="color-label" for="bg-color">Background</label>
-        <input id="bg-color" type="color" [value]="bgColor()" (input)="setBackground($event)" />
-        <label class="check compact">
-          <input type="checkbox" [checked]="transparentBg()" (change)="setTransparent($event)" />
-          <span>Transparent</span>
+        <label class="check">
+          <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
+          <span>Look at Camera · Model {{ activeSlot() }}</span>
         </label>
-      </div>
-      <label class="check">
-        <input type="checkbox" [checked]="headOnly()" (change)="setHeadOnly($event)" />
-        <span>Head-only crop (hide both bodies)</span>
-      </label>
-      @if (headOnly()) {
-      <div class="slider-row compact">
-        <label for="crop-offset">Cut height</label>
-        <input id="crop-offset" type="range" min="-0.4" max="0.4" step="0.01" [value]="cropOffset()"
-          (input)="setCropOffset($event)" />
-      </div>
-      }
-      <button type="button" class="btn primary wide" (click)="savePng()">Save PNG (both heads)</button>
-      <p class="hint">Transparent + orthographic is handy for tracing over in your drawing app.</p>
+        <div class="row">
+          <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
+        </div>
+        <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.
+        </p>
+        @for (axis of axes; track axis) {
+        <div class="slider-row">
+          <label [attr.for]="'slider-' + axis">{{ axisLabel(axis) }}</label>
+          <input [id]="'slider-' + axis" type="range" min="-90" max="90" step="1"
+            [value]="pose()[activeSlot()][selected()][axis]" (input)="setAngle(axis, $event)" />
+          <input class="num" type="number" min="-180" max="180" step="1"
+            [attr.aria-label]="axisLabel(axis) + ' degrees'" [value]="round(pose()[activeSlot()][selected()][axis])"
+            (change)="setAngle(axis, $event)" />
+        </div>
+        }
+        <div class="row">
+          <button type="button" class="btn" (click)="resetPose()">Reset active</button>
+          <button type="button" class="btn" (click)="resetBothPoses()">Reset both</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" (click)="faceEachOther()">Face each other</button>
+          <button type="button" class="btn" (click)="mirrorAtoB()">Mirror A → B</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" (click)="savePose()">Save composition</button>
+          <label for="pose-file" class="btn">Load composition</label>
+          <input id="pose-file" type="file" accept=".json,application/json" (change)="onPoseFile($event)" hidden />
+        </div>
+        <label class="check">
+          <input type="checkbox" [checked]="gizmoOn()" (change)="setGizmo($event)" />
+          <span>3D rotate gizmo + joint markers</span>
+        </label>
+        <p class="hint">
+          Only <strong>2 posing bones per head</strong> are registered — no gizmos on arms, spine or
+          legs. Marker colours: A = orange/teal, B = pink/blue. Click one to switch head + bone.
+        </p>
       </section>
 
-    <section class="block" [hidden]="activeSection() !== 'face'">
-      <h2>Face <small>slot {{ activeSlot() }}</small></h2>
-      <div class="segmented">
-        @for (slot of slots; track slot) {
-        <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-          Model {{ slot }}
-        </button>
+      <section class="block" [hidden]="activeSection() !== 'position'">
+        <h2>Position <small>move each head · XYZ</small></h2>
+        <div class="segmented">
+          @for (slot of slots; track slot) {
+          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Head {{ slot }}
+          </button>
+          }
+        </div>
+        <div class="slider-row compact model-scale-row">
+          <label for="model-scale">Model {{ activeSlot() }} scale</label>
+          <input id="model-scale" type="range" min="0.25" max="2.5" step="0.01" [value]="modelScales()[activeSlot()]"
+            (input)="setModelScale($event)" />
+          <input class="num scale-num" type="number" min="0.25" max="2.5" step="0.01" aria-label="Model scale"
+            [value]="modelScales()[activeSlot()]" (change)="setModelScaleNumber($event)" />
+        </div>
+        <div class="row">
+          <button type="button" class="btn" (click)="resetModelScale()">Reset Model {{ activeSlot() }} scale ({{
+            activeSlot() === 'A' ? '0.9×' : '1×' }})</button>
+        </div>
+        <p class="hint">Scale each model independently without changing the saved VRM.</p>
+        @for (axis of axes; track axis) {
+        <div class="slider-row">
+          <label [attr.for]="'offset-' + axis">{{ positionLabel(axis) }}</label>
+          <input [id]="'offset-' + axis" type="range" [min]="-maxOffset" [max]="maxOffset" step="0.05"
+            [value]="info().offsets[activeSlot()][axis]" (input)="setOffset(axis, $event)" />
+          <input class="num" type="number" [min]="-maxOffset" [max]="maxOffset" step="0.05"
+            [attr.aria-label]="positionLabel(axis)" [value]="round2(info().offsets[activeSlot()][axis])"
+            (change)="setOffset(axis, $event)" />
+        </div>
         }
-      </div>
-      @if (!activeInfo().expressions.length && !activeInfo().morphs.length) {
-      <p class="hint">No expressions or blend shapes are available for this model.</p>
-      }
-      @if (activeInfo().expressions.length) {
-      <p class="sub">VRM expressions</p>
-      @for (name of activeInfo().expressions.slice(0, 12); track name) {
-      <div class="slider-row compact">
-        <label [attr.for]="'exp-' + name">{{ name }}</label>
-        <input [id]="'exp-' + name" type="range" min="0" max="1" step="0.01" [value]="expressionValues()[name] || 0"
-          (input)="setExpression(name, $event)" />
-      </div>
-      }
+        <div class="row">
+          <button type="button" class="btn" (click)="resetPositions()">Reset positions</button>
+          <button type="button" class="btn" (click)="mirrorPositions()">Mirror A → B</button>
+        </div>
+
+      </section>
+
+      <section class="block" [hidden]="activeSection() !== 'camera'">
+        <h2>Camera</h2>
+        <div class="presets">
+          @for (preset of presets; track preset.id) {
+          <button type="button" class="btn small" (click)="setPreset(preset.id)">{{ preset.label }}</button>
+          }
+        </div>
+        <div class="segmented projection">
+          <button type="button" [class.active]="projection() === 'perspective'" (click)="setProjection('perspective')">
+            Perspective
+          </button>
+          <button type="button" [class.active]="projection() === 'orthographic'"
+            (click)="setProjection('orthographic')">
+            Orthographic
+          </button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" (click)="frameHeads()">Frame both heads</button>
+          <button type="button" class="btn" (click)="frameHead()">Zoom to active</button>
+        </div>
+        <div class="row">
+          <button type="button" class="btn" (click)="frameModel()">Frame whole model</button>
+        </div>
+        <button type="button" class="btn primary wide" (click)="orthoHeadView()">
+          Ortho couple view (3/4)
+        </button>
+        <p class="hint">Orthographic removes perspective distortion — ideal for anime faces. Scroll to zoom.</p>
+
+        <p class="sub touch-title">Touch navigation</p>
+        <div class="touch-row">
+          <span class="touch-label">1 finger</span>
+          <div class="segmented mini">
+            <button type="button" [class.active]="oneFinger() === 'rotate'"
+              (click)="setOneFinger('rotate')">Rotate</button>
+            <button type="button" [class.active]="oneFinger() === 'pan'" (click)="setOneFinger('pan')">Pan
+              up/down</button>
+          </div>
+        </div>
+        <div class="touch-row">
+          <span class="touch-label">2 fingers</span>
+          <div class="segmented mini">
+            <button type="button" [class.active]="twoFingers() === 'zoomPan'" (click)="setTwoFingers('zoomPan')">Zoom +
+              pan</button>
+            <button type="button" [class.active]="twoFingers() === 'zoomRotate'"
+              (click)="setTwoFingers('zoomRotate')">Zoom +
+              rotate</button>
+          </div>
+        </div>
+        <p class="hint">
+          Pinch = zoom · one finger = orbit (or vertical pan) · two fingers together = pan.
+          The rotate gizmo and joint markers are draggable/tappable by touch too.
+        </p>
+
+        <div class="row">
+          <label class="color-label" for="bg-color">Background</label>
+          <input id="bg-color" type="color" [value]="bgColor()" (input)="setBackground($event)" />
+          <label class="check compact">
+            <input type="checkbox" [checked]="transparentBg()" (change)="setTransparent($event)" />
+            <span>Transparent</span>
+          </label>
+        </div>
+        <label class="check">
+          <input type="checkbox" [checked]="headOnly()" (change)="setHeadOnly($event)" />
+          <span>Head-only crop (hide both bodies)</span>
+        </label>
+        @if (headOnly()) {
+        <div class="slider-row compact">
+          <label for="crop-offset">Cut height</label>
+          <input id="crop-offset" type="range" min="-0.4" max="0.4" step="0.01" [value]="cropOffset()"
+            (input)="setCropOffset($event)" />
+        </div>
+        }
+        <button type="button" class="btn primary wide" (click)="savePng()">Save PNG (both heads)</button>
+        <p class="hint">Transparent + orthographic is handy for tracing over in your drawing app.</p>
+      </section>
+
+      <section class="block" [hidden]="activeSection() !== 'face'">
+        <h2>Face <small>slot {{ activeSlot() }}</small></h2>
+        <div class="segmented">
+          @for (slot of slots; track slot) {
+          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Model {{ slot }}
+          </button>
+          }
+        </div>
+        @if (!activeInfo().expressions.length && !activeInfo().morphs.length) {
+        <p class="hint">No expressions or blend shapes are available for this model.</p>
+        }
+        @if (activeInfo().expressions.length) {
+        <p class="sub">VRM expressions</p>
+        @for (name of activeInfo().expressions.slice(0, 12); track name) {
+        <div class="slider-row compact">
+          <label [attr.for]="'exp-' + name">{{ name }}</label>
+          <input [id]="'exp-' + name" type="range" min="0" max="1" step="0.01" [value]="expressionValues()[name] || 0"
+            (input)="setExpression(name, $event)" />
+        </div>
+        }
         }
         @if (activeInfo().morphs.length && !activeInfo().expressions.length) {
         <p class="sub">Blend shapes</p>
@@ -273,18 +291,18 @@
         <button type="button" class="btn" (click)="resetFace()">Reset face</button>
       </section>
 
-    <footer class="status" [class.error]="status().startsWith('Load failed')">
-      @if (busy()) { <span class="spinner"></span> }
-      {{ status() }}
-    </footer>
+      <footer class="status" [class.error]="status().startsWith('Load failed')">
+        @if (busy()) { <span class="spinner"></span> }
+        {{ status() }}
+      </footer>
     </div>
   </aside>
 
   <main class="viewport" #viewport [class.dragging]="dragging()" (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave()" (drop)="onDrop($event)">
     @if (!panelOpen()) {
-    <button type="button" class="btn menu-toggle" (click)="togglePanel()" aria-label="Open controls" aria-expanded="false"
-      aria-controls="side-panel">☰</button>
+    <button type="button" class="btn menu-toggle" (click)="togglePanel()" aria-label="Open controls"
+      aria-expanded="false" aria-controls="side-panel">☰</button>
     }
     <div class="badge">{{ activeSlot() }} · {{ selected() | uppercase }} · {{ projection() }}</div>
     <div class="tips">
@@ -295,4 +313,4 @@
     <div class="drop-overlay">Drop a .vrm / .glb into slot {{ activeSlot() }}</div>
     }
   </main>
-  </div>
+</div>

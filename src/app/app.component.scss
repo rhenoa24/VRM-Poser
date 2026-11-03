@@ -151,7 +151,7 @@ h2 {
     color: #e8ebf3;
     border-radius: 8px;
     padding: 8px 11px;
-    font-size: 12px;
+    font-size: 10.5px;
     font-family: inherit;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
@@ -257,6 +257,7 @@ h2 {
     padding: 9px;
     margin-bottom: 9px;
     background: #1d2230;
+    flex: 1;
 
     &.active {
         border-color: #d22b32;
