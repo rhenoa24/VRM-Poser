@@ -23,21 +23,18 @@ import {
   type TwoFingerMode,
   type SlotInfo,
   type StudioInfo,
-} from './vrm-poser';
-
-type ControlSection = 'models' | 'pose' | 'face' | 'position' | 'camera';
-
-const SAVED_MODELS = [
-  { fileName: 'Ren 2026.vrm', name: 'Ren 2026' },
-  { fileName: 'Tobio 2025 (C).vrm', name: 'Tobio 2025 (C)' },
-  { fileName: 'Tobio 2025 (CS).vrm', name: 'Tobio 2025 (CS)' },
-  { fileName: 'Tobio 2026 (ver.R).vrm', name: 'Tobio 2026 (ver.R)' },
-] as const;
-
-const DEFAULT_MODELS: Record<SlotId, string> = {
-  A: 'Ren 2026.vrm',
-  B: 'Tobio 2025 (C).vrm',
-};
+} from './studio';
+import {
+  BONES,
+  CAMERA_PRESETS,
+  DEFAULT_MODELS,
+  DEFAULT_MODEL_SCALES,
+  MAX_MODEL_SCALE,
+  MIN_MODEL_SCALE,
+  SAVED_MODELS,
+  type ControlSection,
+} from './studio.config';
+import { readChecked, readNumber, readValue } from './dom-utils';
 
 @Component({
   selector: 'app-root',
@@ -71,7 +68,7 @@ export class App implements OnDestroy {
   readonly selected = signal<BoneKey>('head');
   readonly gizmoOn = signal(false);
   readonly lookAtCamera = signal<Record<SlotId, boolean>>({ A: false, B: false });
-  readonly modelScales = signal<Record<SlotId, number>>({ A: 0.9, B: 1 });
+  readonly modelScales = signal<Record<SlotId, number>>({ ...DEFAULT_MODEL_SCALES });
   readonly projection = signal<Projection>('perspective');
   readonly bgColor = signal('#20242f');
   readonly transparentBg = signal(false);
@@ -92,17 +89,8 @@ export class App implements OnDestroy {
   readonly savedModelsList = SAVED_MODELS;
   readonly axes: Axis[] = ['x', 'y', 'z'];
   readonly slots: SlotId[] = ['A', 'B'];
-  readonly bones: Array<{ id: BoneKey; label: string }> = [
-    { id: 'head', label: 'Head' },
-    { id: 'neck', label: 'Neck' },
-  ];
-  readonly presets: Array<{ id: CameraPreset; label: string }> = [
-    { id: 'front', label: 'Front' },
-    { id: 'threeQuarter', label: '3/4' },
-    { id: 'side', label: 'Side' },
-    { id: 'back', label: 'Back' },
-    { id: 'top', label: 'Top' },
-  ];
+  readonly bones = BONES;
+  readonly presets = CAMERA_PRESETS;
 
   constructor() {
     afterNextRender(() => {
@@ -149,7 +137,7 @@ export class App implements OnDestroy {
   }
 
   setSavedModel(slotId: SlotId, event: Event): void {
-    const fileName = (event.target as HTMLSelectElement).value;
+    const fileName = readValue(event);
     this.savedModels.update((models) => ({ ...models, [slotId]: fileName }));
   }
 
@@ -221,13 +209,13 @@ export class App implements OnDestroy {
   }
 
   setAngle(axis: Axis, event: Event): void {
-    const degrees = Number((event.target as HTMLInputElement).value);
+    const degrees = readNumber(event);
     this.studio?.setAngle(this.activeSlot(), this.selected(), axis, degrees);
   }
 
   setLookAtCamera(event: Event): void {
     const slot = this.activeSlot();
-    const enabled = (event.target as HTMLInputElement).checked;
+    const enabled = readChecked(event);
     this.lookAtCamera.update((states) => ({ ...states, [slot]: enabled }));
     this.studio?.setLookAtCamera(slot, enabled);
   }
@@ -273,18 +261,18 @@ export class App implements OnDestroy {
   }
 
   setSpacing(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
+    const value = readNumber(event);
     this.spacing.set(value);
     this.studio?.setSpacingRatio(value);
   }
 
   setOffset(axis: Axis, event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
+    const value = readNumber(event);
     this.studio?.setOffset(this.activeSlot(), axis, value);
   }
 
   setModelScale(event: Event): void {
-    const scale = Number((event.target as HTMLInputElement).value);
+    const scale = readNumber(event);
     this.applyModelScale(scale);
   }
 
@@ -292,7 +280,7 @@ export class App implements OnDestroy {
     const input = event.target as HTMLInputElement;
     const scale = Number(input.value);
     if (!Number.isFinite(scale)) return;
-    const clampedScale = Math.min(2.5, Math.max(0.25, scale));
+    const clampedScale = Math.min(MAX_MODEL_SCALE, Math.max(MIN_MODEL_SCALE, scale));
     input.value = String(clampedScale);
     this.applyModelScale(clampedScale);
   }
@@ -305,7 +293,7 @@ export class App implements OnDestroy {
 
   resetModelScale(): void {
     const slot = this.activeSlot();
-    this.modelScales.update((scales) => ({ ...scales, [slot]: slot === 'A' ? 0.9 : 1 }));
+    this.modelScales.update((scales) => ({ ...scales, [slot]: DEFAULT_MODEL_SCALES[slot] }));
     this.studio?.setModelScale(slot, this.modelScales()[slot]);
   }
 
@@ -324,13 +312,13 @@ export class App implements OnDestroy {
   // -- face -----------------------------------------------------------------
 
   setExpression(name: string, event: Event): void {
-    const weight = Number((event.target as HTMLInputElement).value);
+    const weight = readNumber(event);
     this.expressionValues.set({ ...this.expressionValues(), [name]: weight });
     this.studio?.setExpression(name, weight);
   }
 
   setMorph(name: string, event: Event): void {
-    const weight = Number((event.target as HTMLInputElement).value);
+    const weight = readNumber(event);
     this.morphValues.set({ ...this.morphValues(), [name]: weight });
     this.studio?.setMorph(name, weight);
   }
@@ -374,7 +362,7 @@ export class App implements OnDestroy {
   }
 
   setGizmo(event: Event): void {
-    const enabled = (event.target as HTMLInputElement).checked;
+    const enabled = readChecked(event);
     this.gizmoOn.set(enabled);
     this.studio?.setGizmoEnabled(enabled);
   }
@@ -396,19 +384,19 @@ export class App implements OnDestroy {
   }
 
   setTransparent(event: Event): void {
-    const transparent = (event.target as HTMLInputElement).checked;
+    const transparent = readChecked(event);
     this.transparentBg.set(transparent);
     this.studio?.setBackground(this.bgColor(), transparent);
   }
 
   setHeadOnly(event: Event): void {
-    const enabled = (event.target as HTMLInputElement).checked;
+    const enabled = readChecked(event);
     this.headOnly.set(enabled);
     this.studio?.setHeadOnly(enabled, this.cropOffset());
   }
 
   setCropOffset(event: Event): void {
-    const value = Number((event.target as HTMLInputElement).value);
+    const value = readNumber(event);
     this.cropOffset.set(value);
     this.studio?.setCropOffset(value);
   }

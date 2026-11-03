@@ -1,5 +1,5 @@
 /**
- * vrm-studio.ts
+ * studio/vrm-studio.ts
  * ---------------------------------------------------------------------------
  * Framework-agnostic Three.js engine for a TWO-HEAD VRM reference viewer.
  * No Angular imports here — reusable from React/Vue/vanilla TS.
@@ -17,254 +17,26 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { VRMHumanBoneName, VRMUtils } from '@pixiv/three-vrm';
+import { DEG, KEYS, RAD, SLOTS } from './constants';
+import type { HeadNeckData } from './head-neck-plugin';
+import { loadModel, type LoadedModel } from './model-loader';
+import { emptySlotInfo, makeSlot, type BoneHandle, type Slot } from './slot';
 import {
-    GLTFLoader,
-    type GLTF,
-    type GLTFLoaderPlugin,
-    type GLTFParser,
-} from 'three/addons/loaders/GLTFLoader.js';
-import {
-    MToonMaterialLoaderPlugin,
-    VRM,
-    VRMHumanBoneName,
-    VRMLoaderPlugin,
-    VRMUtils,
-} from '@pixiv/three-vrm';
-import { VRMMaterialsV0CompatPlugin } from '@pixiv/three-vrm-materials-v0compat';
-
-export type BoneKey = 'head' | 'neck';
-export type SlotId = 'A' | 'B';
-export type Axis = 'x' | 'y' | 'z';
-export type CameraPreset = 'front' | 'threeQuarter' | 'side' | 'back' | 'top';
-export type Projection = 'perspective' | 'orthographic';
-/** What a single touch drag does on the canvas. */
-export type OneFingerMode = 'rotate' | 'pan';
-/** What a two-finger gesture does on the canvas. */
-export type TwoFingerMode = 'zoomPan' | 'zoomRotate';
-
-export interface BoneAngles {
-    /** pitch / nod, degrees */
-    x: number;
-    /** yaw / turn, degrees */
-    y: number;
-    /** roll / tilt, degrees */
-    z: number;
-}
-export type Pose = Record<BoneKey, BoneAngles>;
-export type PoseMap = Record<SlotId, Pose>;
-
-/** Per-model translation, in head-height units (1 = one head height). */
-export interface Offset3 {
-    x: number;
-    y: number;
-    z: number;
-}
-export type OffsetMap = Record<SlotId, Offset3>;
-
-export const ZERO_OFFSET: Offset3 = { x: 0, y: 0, z: 0 };
-export const ZERO_OFFSET_MAP: OffsetMap = {
-    A: { ...ZERO_OFFSET },
-    B: { ...ZERO_OFFSET },
-};
-export const MAX_OFFSET = 3;
-
-export interface SlotInfo {
-    id: SlotId;
-    modelName: string;
-    mode: 'empty' | 'vrm' | 'gltf';
-    version: string;
-    bonesFound: BoneKey[];
-    expressions: string[];
-    morphs: string[];
-}
-
-export interface StudioInfo {
-    slots: SlotInfo[];
-    activeSlot: SlotId;
-    spacingRatio: number;
-    offsets: OffsetMap;
-    /** World-space size of one offset unit (the taller head's height). */
-    layoutUnit: number;
-    message: string;
-}
-
-export interface StudioCallbacks {
-    onInfo(info: StudioInfo): void;
-    onStatus(message: string): void;
-    onPose(pose: PoseMap): void;
-    onSelection(slot: SlotId, bone: BoneKey): void;
-}
-
-export const ZERO_POSE: Pose = {
-    head: { x: 0, y: 0, z: 0 },
-    neck: { x: 0, y: 0, z: 0 },
-};
-
-export const ZERO_POSE_MAP: PoseMap = {
-    A: structuredClone(ZERO_POSE),
-    B: structuredClone(ZERO_POSE),
-};
-
-interface BoneHandle {
-    node: THREE.Object3D;
-    restLocal: THREE.Quaternion;
-    /** World quaternion of the parent at rest; lets slider angles stay in
-     *  predictable world axes regardless of how the exporter authored bones. */
-    restParentWorld: THREE.Quaternion;
-}
-
-interface MorphTarget {
-    mesh: THREE.Mesh;
-    index: number;
-}
-
-type SlotSource =
-    | { kind: 'file'; file: File }
-    | { kind: 'url'; url: string; name: string }
-    | null;
-
-interface Slot {
-    id: SlotId;
-    wrapper: THREE.Group;
-    root: THREE.Object3D | null;
-    vrm: VRM | null;
-    bones: Partial<Record<BoneKey, BoneHandle>>;
-    pose: Pose;
-    /** Independent world offset from the shared layout, in head-height units. */
-    offset: Offset3;
-    modelScale: number;
-    morphTargets: Map<string, MorphTarget[]>;
-    expressionNames: string[];
-    source: SlotSource;
-    objectUrl: string | null;
-    /** translation that brought the neck joint to world Y = 0 */
-    neckOffsetY: number;
-    headBoneY: number;
-    headTopY: number;
-    headCenterY: number;
-    headHeight: number;
-    info: SlotInfo;
-}
-
-interface HeadNeckData {
-    bones: Partial<Record<BoneKey, THREE.Object3D>>;
-    isVRM0: boolean;
-    version: string;
-}
-
-interface GlbJson {
-    extensions?: Record<string, any>;
-}
-
-interface LoadedModel {
-    gltf: GLTF;
-    vrm: VRM | null;
-    mode: 'vrm' | 'gltf';
-}
-
-const DEG = THREE.MathUtils.DEG2RAD;
-const RAD = THREE.MathUtils.RAD2DEG;
-const KEYS: BoneKey[] = ['head', 'neck'];
-const SLOTS: SlotId[] = ['A', 'B'];
-
-/**
- * Fallback plugin. three-vrm THROWS when a file lacks any of the ~15 required
- * humanoid bones (hips, spine, arms, legs…). This plugin instead reads the
- * humanoid map straight from glTF JSON (VRM 1.0 `VRMC_vrm` / VRM 0.x `VRM`),
- * resolves only `head` / `neck`, and name-matches for plain .glb files.
- */
-class HeadNeckBonesPlugin implements GLTFLoaderPlugin {
-    readonly name = 'HeadNeckBonesPlugin';
-
-    constructor(private readonly parser: GLTFParser) { }
-
-    async afterRoot(gltf: GLTF): Promise<void> {
-        const json = (this.parser as unknown as { json: GlbJson }).json;
-        const nodeIndex: Partial<Record<BoneKey, number>> = {};
-
-        const v1 = json.extensions?.['VRMC_vrm']?.humanoid?.humanBones as
-            | Record<string, { node: number }>
-            | undefined;
-        if (v1) {
-            if (typeof v1['head']?.node === 'number') nodeIndex.head = v1['head'].node;
-            if (typeof v1['neck']?.node === 'number') nodeIndex.neck = v1['neck'].node;
-        }
-
-        const v0 = json.extensions?.['VRM']?.humanoid?.humanBones as
-            | Array<{ bone: string; node: number }>
-            | undefined;
-        if (Array.isArray(v0)) {
-            for (const entry of v0) {
-                if (entry.bone === 'head' && nodeIndex.head == null) nodeIndex.head = entry.node;
-                if (entry.bone === 'neck' && nodeIndex.neck == null) nodeIndex.neck = entry.node;
-            }
-        }
-
-        const bones: Partial<Record<BoneKey, THREE.Object3D>> = {};
-        for (const key of KEYS) {
-            const index = nodeIndex[key];
-            if (index == null) continue;
-            try {
-                const node = (await this.parser.getDependency('node', index)) as THREE.Object3D | null;
-                if (node) bones[key] = node;
-            } catch {
-                // name-based pass below may still find something
-            }
-        }
-
-        if (!bones.head || !bones.neck) {
-            gltf.scene.traverse((obj) => {
-                const n = obj.name.toLowerCase();
-                if (!bones.head && /(head|atama|頭)/.test(n)) bones.head = obj;
-                if (!bones.neck && /(neck|kubi|首)/.test(n)) bones.neck = obj;
-            });
-        }
-
-        const isVRM0 = !!json.extensions?.['VRM'] && !json.extensions?.['VRMC_vrm'];
-        const version = json.extensions?.['VRMC_vrm']?.specVersion
-            ? 'VRM 1.0'
-            : isVRM0
-                ? 'VRM 0.x'
-                : 'glTF / GLB';
-
-        gltf.userData['headNeck'] = { bones, isVRM0, version } satisfies HeadNeckData;
-    }
-}
-
-function emptySlotInfo(id: SlotId): SlotInfo {
-    return {
-        id,
-        modelName: 'empty',
-        mode: 'empty',
-        version: '—',
-        bonesFound: [],
-        expressions: [],
-        morphs: [],
-    };
-}
-
-function makeSlot(id: SlotId): Slot {
-    return {
-        id,
-        wrapper: new THREE.Group(),
-        root: null,
-        vrm: null,
-        bones: {},
-        pose: structuredClone(ZERO_POSE),
-        offset: { ...ZERO_OFFSET },
-        modelScale: 1,
-        morphTargets: new Map(),
-        expressionNames: [],
-        source: null,
-        objectUrl: null,
-        neckOffsetY: 0,
-        headBoneY: 0,
-        headTopY: 0.2,
-        headCenterY: 0.1,
-        headHeight: 0.2,
-        info: emptySlotInfo(id),
-    };
-}
+    MAX_OFFSET,
+    ZERO_OFFSET,
+    ZERO_POSE,
+    type Axis,
+    type BoneKey,
+    type CameraPreset,
+    type OneFingerMode,
+    type Pose,
+    type PoseMap,
+    type Projection,
+    type SlotId,
+    type StudioCallbacks,
+    type TwoFingerMode,
+} from './types';
 
 export class VrmStudio {
     private readonly host: HTMLElement;
@@ -424,36 +196,8 @@ export class VrmStudio {
 
     private async loadUrl(slotId: SlotId, url: string, name: string): Promise<void> {
         this.callbacks.onStatus(`Loading ${name} into slot ${slotId}…`);
-        const loaded = await this.loadModel(url);
+        const loaded = await loadModel(url, (message) => this.callbacks.onStatus(message));
         this.install(slotId, loaded, name);
-    }
-
-    private async loadModel(url: string): Promise<LoadedModel> {
-        try {
-            const loader = new GLTFLoader();
-            loader.register((parser) => new VRMLoaderPlugin(parser));
-            const gltf = await loader.loadAsync(url);
-            const vrm = (gltf.userData['vrm'] as VRM | undefined) ?? null;
-            if (!vrm) throw new Error('No VRM extension found in this file');
-
-            VRMUtils.rotateVRM0(vrm);
-            if (vrm.lookAt) {
-                vrm.lookAt.autoUpdate = false;
-                vrm.lookAt.target = null;
-            }
-            return { gltf, vrm, mode: 'vrm' };
-        } catch (error) {
-            const reason = error instanceof Error ? error.message : String(error);
-            this.callbacks.onStatus(
-                `Strict VRM loader rejected this file (${reason}). Retrying with the head/neck-tolerant loader…`,
-            );
-            const loader = new GLTFLoader();
-            loader.register((parser) => new VRMMaterialsV0CompatPlugin(parser));
-            loader.register((parser) => new MToonMaterialLoaderPlugin(parser));
-            loader.register((parser) => new HeadNeckBonesPlugin(parser));
-            const gltf = await loader.loadAsync(url);
-            return { gltf, vrm: null, mode: 'gltf' };
-        }
     }
 
     clearSlot(slotId: SlotId): void {
