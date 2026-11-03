@@ -1240,7 +1240,7 @@ export class VrmStudio {
     };
 
     private updateMarkers(): void {
-        const size = Math.max(this.radius * (this.coarsePointer ? 0.05: 0.05), 0);
+        const size = Math.max(this.radius * (this.coarsePointer ? 0.04: 0.02), 0.004);
         for (const marker of this.markerGroup.children) {
             const id = marker.userData['slot'] as SlotId;
             const bone = marker.userData['boneKey'] as BoneKey;
