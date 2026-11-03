@@ -71,7 +71,7 @@ export const MAX_OFFSET = 3;
 export interface SlotInfo {
     id: SlotId;
     modelName: string;
-    mode: 'empty' | 'demo' | 'vrm' | 'gltf';
+    mode: 'empty' | 'vrm' | 'gltf';
     version: string;
     bonesFound: BoneKey[];
     expressions: string[];
@@ -121,7 +121,6 @@ interface MorphTarget {
 type SlotSource =
     | { kind: 'file'; file: File }
     | { kind: 'url'; url: string; name: string }
-    | { kind: 'demo' }
     | null;
 
 interface Slot {
@@ -417,8 +416,7 @@ export class VrmStudio {
             return;
         }
         if (source.kind === 'file') await this.loadFromFile('B', source.file);
-        else if (source.kind === 'url') await this.loadFromUrl('B', source.url, source.name);
-        else await this.useDemo('B');
+        else await this.loadFromUrl('B', source.url, source.name);
     }
 
     private async loadUrl(slotId: SlotId, url: string, name: string): Promise<void> {
@@ -453,51 +451,6 @@ export class VrmStudio {
             const gltf = await loader.loadAsync(url);
             return { gltf, vrm: null, mode: 'gltf' };
         }
-    }
-
-    /** Procedural stand-in so the app works before you supply a .vrm file. */
-    useDemo(slotId: SlotId): void {
-        const slot = this.slots[slotId];
-        this.clearSlot(slotId);
-        const root = this.buildDemoHead();
-        slot.wrapper.add(root);
-        slot.root = root;
-        slot.source = { kind: 'demo' };
-        this.attachClipping(slot);
-        // Measure the neck on an untransformed wrapper; offset goes on afterwards.
-        slot.wrapper.position.set(0, 0, 0);
-        this.scene.updateMatrixWorld(true);
-
-        const neck = root.getObjectByName('neck');
-        const head = root.getObjectByName('head');
-        slot.neckOffsetY = neck ? neck.getWorldPosition(new THREE.Vector3()).y : 0;
-        slot.wrapper.position.set(0, -slot.neckOffsetY, 0);
-        this.scene.updateMatrixWorld(true);
-
-        if (head) slot.bones.head = this.captureBone(head);
-        if (neck) slot.bones.neck = this.captureBone(neck);
-        this.computeHeadMetrics(slot);
-        this.collectMorphs(slot, root);
-
-        slot.info = {
-            id: slotId,
-            modelName: 'Demo head (procedural)',
-            mode: 'demo',
-            version: 'built-in',
-            bonesFound: KEYS.filter((k) => !!slot.bones[k]),
-            expressions: [],
-            morphs: [...slot.morphTargets.keys()].slice(0, 24),
-        };
-
-        this.finishInstall(slotId);
-        this.callbacks.onStatus(`Demo head ready in slot ${slotId}.`);
-    }
-
-    useDemoBoth(): void {
-        this.useDemo('A');
-        this.useDemo('B');
-        this.callbacks.onStatus('Two demo heads ready — pose A and B independently.');
-        this.emitInfo();
     }
 
     clearSlot(slotId: SlotId): void {
@@ -1162,7 +1115,7 @@ export class VrmStudio {
                 ? 'Two heads ready. Pick A or B below, then pose them independently.'
                 : loaded === 1
                     ? 'One head loaded. Add a second via slot B or “Duplicate A → B”.'
-                    : 'Load a model into slot A and B (or use Demo both).';
+                    : 'Load both templates, or load a model into each slot.';
         this.callbacks.onInfo({
             slots: SLOTS.map((id) => ({ ...this.slots[id].info })),
             activeSlot: this.activeSlot,
@@ -1264,68 +1217,6 @@ export class VrmStudio {
                 marker.scale.setScalar(size);
             }
         }
-    }
-
-    private buildDemoHead(): THREE.Group {
-        const root = new THREE.Group();
-        root.name = 'demo-head';
-        const skin = new THREE.MeshStandardMaterial({ color: 0xf0c6a8, roughness: 0.85 });
-        const hair = new THREE.MeshStandardMaterial({ color: 0x3c3138, roughness: 0.9 });
-        const dark = new THREE.MeshStandardMaterial({ color: 0x2b2b33, roughness: 0.5 });
-        const white = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.4 });
-
-        const neck = new THREE.Object3D();
-        neck.name = 'neck';
-        root.add(neck);
-        const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.11, 0.24, 24), skin);
-        neckMesh.position.y = 0.12;
-        neck.add(neckMesh);
-
-        const head = new THREE.Object3D();
-        head.name = 'head';
-        head.position.y = 0.24;
-        neck.add(head);
-
-        const skull = new THREE.Mesh(new THREE.SphereGeometry(0.27, 32, 24), skin);
-        skull.scale.set(0.86, 1.04, 0.9);
-        skull.position.y = 0.26;
-        head.add(skull);
-
-        const cap = new THREE.Mesh(
-            new THREE.SphereGeometry(0.278, 32, 20, 0, Math.PI * 2, 0, 1.15),
-            hair,
-        );
-        cap.scale.set(0.88, 1.06, 0.92);
-        cap.position.y = 0.26;
-        head.add(cap);
-
-        for (const side of [-1, 1]) {
-            const ear = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), skin);
-            ear.position.set(side * 0.235, 0.26, 0);
-            ear.scale.set(0.55, 1, 0.8);
-            head.add(ear);
-
-            const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.045, 16, 12), white);
-            eyeWhite.position.set(side * 0.095, 0.29, 0.215);
-            eyeWhite.scale.set(1, 0.75, 0.5);
-            head.add(eyeWhite);
-
-            const iris = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 10), dark);
-            iris.position.set(side * 0.095, 0.29, 0.238);
-            iris.scale.set(1, 1, 0.5);
-            head.add(iris);
-        }
-
-        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 12), skin);
-        nose.rotation.x = Math.PI / 2;
-        nose.position.set(0, 0.235, 0.245);
-        head.add(nose);
-
-        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.012, 0.01), dark);
-        mouth.position.set(0, 0.155, 0.235);
-        head.add(mouth);
-
-        return root;
     }
 
     dispose(): void {

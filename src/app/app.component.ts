@@ -25,6 +25,11 @@ import {
   type StudioInfo,
 } from './vrm-poser';
 
+const TEMPLATE_MODELS: Record<SlotId, { fileName: string; name: string }> = {
+  A: { fileName: 'Ren 2026.vrm', name: 'Ren 2026' },
+  B: { fileName: 'Tobio 2025 (C).vrm', name: 'Tobio 2025 (C)' },
+};
+
 @Component({
   selector: 'app-root',
   imports: [UpperCasePipe],
@@ -99,7 +104,7 @@ export class App implements OnDestroy {
         },
       });
       this.studio.setBackground(this.bgColor(), this.transparentBg());
-      this.studio.useDemoBoth();
+      void this.loadTemplates();
     });
   }
 
@@ -128,24 +133,26 @@ export class App implements OnDestroy {
     if (file) await this.runLoad(() => this.studio!.loadFromFile(this.activeSlot(), file));
   }
 
-  async loadBundled(): Promise<void> {
-    // document.baseURI keeps this correct under GitHub Pages' /<repo>/ prefix.
-    const url = new URL('models/head.vrm', document.baseURI).href;
-    await this.runLoad(() => this.studio!.loadFromUrl(this.activeSlot(), url, 'head.vrm'));
+  async loadTemplates(): Promise<void> {
+    await this.runLoad(async () => {
+      const results = await Promise.allSettled(this.slots.map((slot) => this.loadTemplate(slot)));
+      const failures = results.flatMap((result, index) => {
+        if (result.status === 'fulfilled') return [];
+        const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        return [`${TEMPLATE_MODELS[this.slots[index]].name}: ${reason}`];
+      });
+      if (failures.length) throw new Error(failures.join('; '));
+    });
+  }
+
+  private loadTemplate(slotId: SlotId): Promise<void> {
+    const model = TEMPLATE_MODELS[slotId];
+    const url = new URL(`models/${model.fileName}`, document.baseURI).href;
+    return this.studio!.loadFromUrl(slotId, url, model.name);
   }
 
   async duplicateAtoB(): Promise<void> {
     await this.runLoad(() => this.studio!.duplicateAtoB());
-  }
-
-  useDemo(slotId: SlotId): void {
-    this.studio?.useDemo(slotId);
-    this.resetFaceValues();
-  }
-
-  useDemoBoth(): void {
-    this.studio?.useDemoBoth();
-    this.resetFaceValues();
   }
 
   clearSlot(slotId: SlotId): void {
