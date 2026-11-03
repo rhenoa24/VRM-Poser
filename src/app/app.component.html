@@ -1,11 +1,14 @@
 <div class="app">
-  <aside class="panel">
+  @if (panelOpen()) {
+  <aside class="panel" id="side-panel">
     <header class="brand">
       <div class="logo">🍓</div>
       <div>
         <h1>VRM Poser</h1>
         <p>Character Face Reference</p>
       </div>
+      <button type="button" class="btn panel-close" (click)="togglePanel()" aria-label="Close controls" aria-expanded="true"
+        aria-controls="side-panel">✕</button>
     </header>
 
     <section class="block">
@@ -16,6 +19,15 @@
           <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
           <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
           <span class="slot-version">{{ slotInfo(slot).version }}</span>
+        </div>
+        <div class="row saved-model-row">
+          <label class="saved-model-label" [attr.for]="'saved-model-' + slot">Saved model</label>
+          <select [id]="'saved-model-' + slot" [value]="savedModels()[slot]" (change)="setSavedModel(slot, $event)">
+            @for (model of savedModelsList; track model.fileName) {
+            <option [value]="model.fileName">{{ model.name }}</option>
+            }
+          </select>
+          <button type="button" class="btn small" (click)="loadSavedModel(slot)" [disabled]="busy()">Load saved</button>
         </div>
         <div class="row">
           <label [attr.for]="'file-' + slot" class="btn primary">Load {{ slot }}</label>
@@ -31,7 +43,7 @@
         <button type="button" class="btn" (click)="duplicateAtoB()">Duplicate A → B</button>
       </div>
       <div class="row">
-        <button type="button" class="btn" (click)="loadTemplates()">Load both templates</button>
+        <button type="button" class="btn" (click)="loadTemplates()" [disabled]="busy()">Load selected for A + B</button>
       </div>
       <div class="slider-row compact">
         <label for="spacing">Head spacing</label>
@@ -115,12 +127,7 @@
         <button type="button" class="btn" (click)="resetPositions()">Reset positions</button>
         <button type="button" class="btn" (click)="mirrorPositions()">Mirror A → B</button>
       </div>
-      <p class="hint">
-        1 unit = one head height (currently <strong>{{ round2(info().layoutUnit) }}</strong> world
-        units). X slides them together/apart, Y raises one head, Z moves one nearer the camera.
-        The camera does <strong>not</strong> auto-reframe so you can see the composition change —
-        hit <strong>Frame both heads</strong> afterwards. Head-only crop follows each head's Y.
-      </p>
+      
       </section>
 
     <section class="block">
@@ -226,10 +233,15 @@
       @if (busy()) { <span class="spinner"></span> }
       {{ status() }}
     </footer>
-    </aside>
+  </aside>
+  }
 
   <main class="viewport" #viewport [class.dragging]="dragging()" (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+    @if (!panelOpen()) {
+    <button type="button" class="btn menu-toggle" (click)="togglePanel()" aria-label="Open controls" aria-expanded="false"
+      aria-controls="side-panel">☰</button>
+    }
     <div class="badge">{{ activeSlot() }} · {{ selected() | uppercase }} · {{ projection() }}</div>
     <div class="tips">
       <span class="tips-mouse">Drag to orbit · Scroll to zoom · Right-drag to pan</span>

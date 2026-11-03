@@ -25,9 +25,16 @@ import {
   type StudioInfo,
 } from './vrm-poser';
 
-const TEMPLATE_MODELS: Record<SlotId, { fileName: string; name: string }> = {
-  A: { fileName: 'Ren 2026.vrm', name: 'Ren 2026' },
-  B: { fileName: 'Tobio 2025 (C).vrm', name: 'Tobio 2025 (C)' },
+const SAVED_MODELS = [
+  { fileName: 'Ren 2026.vrm', name: 'Ren 2026' },
+  { fileName: 'Tobio 2025 (C).vrm', name: 'Tobio 2025 (C)' },
+  { fileName: 'Tobio 2025 (CS).vrm', name: 'Tobio 2025 (CS)' },
+  { fileName: 'Tobio 2026 (ver.R).vrm', name: 'Tobio 2026 (ver.R)' },
+] as const;
+
+const DEFAULT_MODELS: Record<SlotId, string> = {
+  A: 'Ren 2026.vrm',
+  B: 'Tobio 2025 (C).vrm',
 };
 
 @Component({
@@ -71,10 +78,13 @@ export class App implements OnDestroy {
   readonly twoFingers = signal<TwoFingerMode>('zoomPan');
   readonly busy = signal(false);
   readonly dragging = signal(false);
+  readonly panelOpen = signal(true);
+  readonly savedModels = signal<Record<SlotId, string>>({ ...DEFAULT_MODELS });
   readonly expressionValues = signal<Record<string, number>>({});
   readonly morphValues = signal<Record<string, number>>({});
 
   readonly maxOffset = MAX_OFFSET;
+  readonly savedModelsList = SAVED_MODELS;
   readonly axes: Axis[] = ['x', 'y', 'z'];
   readonly slots: SlotId[] = ['A', 'B'];
   readonly bones: Array<{ id: BoneKey; label: string }> = [
@@ -133,22 +143,38 @@ export class App implements OnDestroy {
     if (file) await this.runLoad(() => this.studio!.loadFromFile(this.activeSlot(), file));
   }
 
+  setSavedModel(slotId: SlotId, event: Event): void {
+    const fileName = (event.target as HTMLSelectElement).value;
+    this.savedModels.update((models) => ({ ...models, [slotId]: fileName }));
+  }
+
+  async loadSavedModel(slotId: SlotId): Promise<void> {
+    await this.runLoad(() => this.loadSelectedModel(slotId));
+  }
+
   async loadTemplates(): Promise<void> {
     await this.runLoad(async () => {
-      const results = await Promise.allSettled(this.slots.map((slot) => this.loadTemplate(slot)));
+      const results = await Promise.allSettled(this.slots.map((slot) => this.loadSelectedModel(slot)));
       const failures = results.flatMap((result, index) => {
         if (result.status === 'fulfilled') return [];
         const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-        return [`${TEMPLATE_MODELS[this.slots[index]].name}: ${reason}`];
+        const fileName = this.savedModels()[this.slots[index]];
+        return [`${fileName}: ${reason}`];
       });
       if (failures.length) throw new Error(failures.join('; '));
     });
   }
 
-  private loadTemplate(slotId: SlotId): Promise<void> {
-    const model = TEMPLATE_MODELS[slotId];
+  private loadSelectedModel(slotId: SlotId): Promise<void> {
+    const fileName = this.savedModels()[slotId];
+    const model = SAVED_MODELS.find((candidate) => candidate.fileName === fileName);
+    if (!model) throw new Error(`Unknown saved model: ${fileName}`);
     const url = new URL(`models/${model.fileName}`, document.baseURI).href;
     return this.studio!.loadFromUrl(slotId, url, model.name);
+  }
+
+  togglePanel(): void {
+    this.panelOpen.update((open) => !open);
   }
 
   async duplicateAtoB(): Promise<void> {

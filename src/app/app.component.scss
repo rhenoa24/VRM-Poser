@@ -4,32 +4,27 @@
 }
 
 .app {
-    display: grid;
-    grid-template-columns: 340px 1fr;
+    position: relative;
     height: 100%;
+    overflow: hidden;
     background: #14171f;
-
-    @media (max-width: 800px) {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    }
 }
 
 .panel {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 6;
+    width: min(360px, calc(100vw - 48px));
+    box-sizing: border-box;
     overflow-y: auto;
-    padding: 18px 18px 24px;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
     border-right: 1px solid #2b3040;
-    background: #191d27;
+    background: rgba(25, 29, 39, 0.97);
+    box-shadow: 8px 0 28px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     gap: 18px;
     scrollbar-width: thin;
-
-    @media (max-width: 800px) {
-        order: 2;
-        border-right: none;
-        border-top: 1px solid #2b3040;
-    }
 }
 
 .brand {
@@ -53,6 +48,25 @@
     font-size: 24px;
     color: #14171f;
     background: linear-gradient(135deg, #ffb454, #55d6be);
+}
+
+.panel-close {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: 16px;
+}
+
+.menu-toggle {
+    position: absolute;
+    z-index: 5;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    font-size: 21px;
 }
 
 h1 {
@@ -203,6 +217,25 @@ h2 {
     align-items: center;
     gap: 7px;
     margin-bottom: 8px;
+}
+
+.saved-model-row {
+    gap: 6px;
+}
+
+.saved-model-label {
+    flex: none;
+    font-size: 10px;
+    color: #b3bacd;
+}
+
+.saved-model-row select {
+    min-width: 0;
+    padding: 8px 6px;
+}
+
+.saved-model-row .btn {
+    flex: none;
 }
 
 .slot-tag {
@@ -437,14 +470,11 @@ select {
 }
 
 .viewport {
-    position: relative;
+    position: absolute;
+    inset: 0;
     min-width: 0;
     overflow: hidden;
     background: #20242f;
-
-    @media (max-width: 800px) {
-        order: 1;
-    }
 }
 
 .badge,
