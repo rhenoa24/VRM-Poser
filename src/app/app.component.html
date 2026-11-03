@@ -89,6 +89,14 @@
         </button>
         }
       </div>
+      <label class="check">
+        <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
+        <span>Look at Camera · Model {{ activeSlot() }}</span>
+      </label>
+      <div class="row">
+        <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
+      </div>
+      <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.</p>
       @for (axis of axes; track axis) {
       <div class="slider-row">
         <label [attr.for]="'slider-' + axis">{{ axisLabel(axis) }}</label>
@@ -130,6 +138,17 @@
         </button>
         }
       </div>
+      <div class="slider-row compact model-scale-row">
+        <label for="model-scale">Model {{ activeSlot() }} scale</label>
+        <input id="model-scale" type="range" min="0.25" max="2.5" step="0.01"
+          [value]="modelScales()[activeSlot()]" (input)="setModelScale($event)" />
+        <input class="num scale-num" type="number" min="0.25" max="2.5" step="0.01"
+          aria-label="Model scale" [value]="modelScales()[activeSlot()]" (change)="setModelScaleNumber($event)" />
+      </div>
+      <div class="row">
+        <button type="button" class="btn" (click)="resetModelScale()">Reset Model {{ activeSlot() }} scale ({{ activeSlot() === 'A' ? '0.9×' : '1×' }})</button>
+      </div>
+      <p class="hint">Scale each model independently without changing the saved VRM.</p>
       @for (axis of axes; track axis) {
       <div class="slider-row">
         <label [attr.for]="'offset-' + axis">{{ positionLabel(axis) }}</label>

@@ -70,6 +70,8 @@ export class App implements OnDestroy {
   readonly activeSlot = signal<SlotId>('A');
   readonly selected = signal<BoneKey>('head');
   readonly gizmoOn = signal(false);
+  readonly lookAtCamera = signal<Record<SlotId, boolean>>({ A: false, B: false });
+  readonly modelScales = signal<Record<SlotId, number>>({ A: 0.9, B: 1 });
   readonly projection = signal<Projection>('perspective');
   readonly bgColor = signal('#20242f');
   readonly transparentBg = signal(false);
@@ -223,6 +225,19 @@ export class App implements OnDestroy {
     this.studio?.setAngle(this.activeSlot(), this.selected(), axis, degrees);
   }
 
+  setLookAtCamera(event: Event): void {
+    const slot = this.activeSlot();
+    const enabled = (event.target as HTMLInputElement).checked;
+    this.lookAtCamera.update((states) => ({ ...states, [slot]: enabled }));
+    this.studio?.setLookAtCamera(slot, enabled);
+  }
+
+  resetGaze(): void {
+    const slot = this.activeSlot();
+    this.lookAtCamera.update((states) => ({ ...states, [slot]: false }));
+    this.studio?.resetGaze(slot);
+  }
+
   resetPose(): void {
     this.studio?.resetPose();
   }
@@ -266,6 +281,32 @@ export class App implements OnDestroy {
   setOffset(axis: Axis, event: Event): void {
     const value = Number((event.target as HTMLInputElement).value);
     this.studio?.setOffset(this.activeSlot(), axis, value);
+  }
+
+  setModelScale(event: Event): void {
+    const scale = Number((event.target as HTMLInputElement).value);
+    this.applyModelScale(scale);
+  }
+
+  setModelScaleNumber(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const scale = Number(input.value);
+    if (!Number.isFinite(scale)) return;
+    const clampedScale = Math.min(2.5, Math.max(0.25, scale));
+    input.value = String(clampedScale);
+    this.applyModelScale(clampedScale);
+  }
+
+  private applyModelScale(scale: number): void {
+    const slot = this.activeSlot();
+    this.modelScales.update((scales) => ({ ...scales, [slot]: scale }));
+    this.studio?.setModelScale(slot, scale);
+  }
+
+  resetModelScale(): void {
+    const slot = this.activeSlot();
+    this.modelScales.update((scales) => ({ ...scales, [slot]: slot === 'A' ? 0.9 : 1 }));
+    this.studio?.setModelScale(slot, this.modelScales()[slot]);
   }
 
   resetPositions(): void {

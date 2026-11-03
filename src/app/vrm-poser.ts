@@ -132,6 +132,7 @@ interface Slot {
     pose: Pose;
     /** Independent world offset from the shared layout, in head-height units. */
     offset: Offset3;
+    modelScale: number;
     morphTargets: Map<string, MorphTarget[]>;
     expressionNames: string[];
     source: SlotSource;
@@ -251,6 +252,7 @@ function makeSlot(id: SlotId): Slot {
         bones: {},
         pose: structuredClone(ZERO_POSE),
         offset: { ...ZERO_OFFSET },
+        modelScale: id === 'A' ? 0.9 : 1,
         morphTargets: new Map(),
         expressionNames: [],
         source: null,
@@ -305,6 +307,7 @@ export class VrmStudio {
     private headOnlyEnabled = false;
     private cropOffsetRatio = 0.03;
     private spacingRatio = 1.8;
+    private readonly lookAtCameraSlots: Record<SlotId, boolean> = { A: false, B: false };
 
     private center = new THREE.Vector3(0, 0.1, 0);
     private radius = 0.4;
@@ -486,6 +489,7 @@ export class VrmStudio {
         slot.vrm = vrm;
         slot.wrapper.add(gltf.scene);
         this.attachClipping(slot);
+        slot.wrapper.scale.setScalar(slot.modelScale);
         slot.wrapper.position.set(0, 0, 0);
 
         let version = 'VRM';
@@ -510,8 +514,8 @@ export class VrmStudio {
         // ONE camera framing work for both heads, whatever their original scale.
         this.scene.updateMatrixWorld(true);
         const joint = neckNode ?? headNode;
-        slot.neckOffsetY = joint ? joint.getWorldPosition(new THREE.Vector3()).y : 0;
-        slot.wrapper.position.set(0, -slot.neckOffsetY, 0);
+        slot.neckOffsetY = joint ? joint.getWorldPosition(new THREE.Vector3()).y / slot.modelScale : 0;
+        slot.wrapper.position.set(0, -slot.neckOffsetY * slot.modelScale, 0);
         this.scene.updateMatrixWorld(true);
 
         if (headNode) slot.bones.head = this.captureBone(headNode);
@@ -635,6 +639,19 @@ export class VrmStudio {
         this.emitInfo();
     }
 
+    setModelScale(slotId: SlotId, scale: number): void {
+        const next = Number.isFinite(scale) ? THREE.MathUtils.clamp(scale, 0.25, 2.5) : 1;
+        const slot = this.slots[slotId];
+        slot.modelScale = next;
+        if (!slot.root) return;
+
+        slot.wrapper.scale.setScalar(next);
+        this.updateLayout();
+        this.computeHeadMetrics(slot);
+        this.updateLayout();
+        this.emitInfo();
+    }
+
     resetOffsets(): void {
         for (const id of SLOTS) this.slots[id].offset = { ...ZERO_OFFSET };
         this.updateLayout();
@@ -657,9 +674,10 @@ export class VrmStudio {
         const spacing = this.spacingRatio * unit;
         for (const slot of loaded) {
             const baseX = loaded.length === 1 ? 0 : (slot.id === 'A' ? -1 : 1) * spacing / 2;
+            slot.wrapper.scale.setScalar(slot.modelScale);
             slot.wrapper.position.set(
                 baseX + slot.offset.x * unit,
-                -slot.neckOffsetY + slot.offset.y * unit,
+                -slot.neckOffsetY * slot.modelScale + slot.offset.y * unit,
                 slot.offset.z * unit,
             );
         }
@@ -687,6 +705,17 @@ export class VrmStudio {
         this.selectedBone = bone;
         this.syncGizmo();
         this.callbacks.onSelection(this.activeSlot, this.selectedBone);
+    }
+
+    setLookAtCamera(slotId: SlotId, enabled: boolean): void {
+        this.lookAtCameraSlots[slotId] = enabled;
+    }
+
+    resetGaze(slotId: SlotId): void {
+        this.lookAtCameraSlots[slotId] = false;
+        const vrm = this.slots[slotId].vrm;
+        vrm?.lookAt?.reset();
+        vrm?.update(0);
     }
 
     getPose(): PoseMap {
@@ -1198,7 +1227,12 @@ export class VrmStudio {
         if (this.disposed) return;
         this.frameId = requestAnimationFrame(this.animate);
         const delta = this.clock.getDelta();
-        for (const id of SLOTS) this.slots[id].vrm?.update(delta);
+        for (const id of SLOTS) {
+            const vrm = this.slots[id].vrm;
+            if (!vrm) continue;
+            if (this.lookAtCameraSlots[id]) vrm.lookAt?.lookAt(this.activeCamera.position);
+            vrm.update(delta);
+        }
         this.orbit.update();
         this.scene.updateMatrixWorld();
         this.updateMarkers();
