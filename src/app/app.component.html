@@ -1,6 +1,23 @@
 <div class="app">
-  @if (panelOpen()) {
-  <aside class="panel" id="side-panel">
+  <aside class="panel" id="side-panel" [hidden]="!panelOpen()">
+    <nav class="section-nav" aria-label="Control sections">
+      <button type="button" class="section-button" [class.active]="activeSection() === 'models'" [attr.aria-current]="activeSection() === 'models' ? 'page' : null" (click)="selectSection('models')" aria-label="Models">
+        <span class="section-icon" aria-hidden="true">▣</span><span>Models</span>
+      </button>
+      <button type="button" class="section-button" [class.active]="activeSection() === 'pose'" [attr.aria-current]="activeSection() === 'pose' ? 'page' : null" (click)="selectSection('pose')" aria-label="Pose">
+        <span class="section-icon" aria-hidden="true">↻</span><span>Pose</span>
+      </button>
+      <button type="button" class="section-button" [class.active]="activeSection() === 'face'" [attr.aria-current]="activeSection() === 'face' ? 'page' : null" (click)="selectSection('face')" aria-label="Face">
+        <span class="section-icon" aria-hidden="true">☺</span><span>Face</span>
+      </button>
+      <button type="button" class="section-button" [class.active]="activeSection() === 'position'" [attr.aria-current]="activeSection() === 'position' ? 'page' : null" (click)="selectSection('position')" aria-label="Position">
+        <span class="section-icon" aria-hidden="true">⌖</span><span>Position</span>
+      </button>
+      <button type="button" class="section-button" [class.active]="activeSection() === 'camera'" [attr.aria-current]="activeSection() === 'camera' ? 'page' : null" (click)="selectSection('camera')" aria-label="Camera">
+        <span class="section-icon" aria-hidden="true">◉</span><span>Camera</span>
+      </button>
+    </nav>
+    <div class="panel-content">
     <header class="brand">
       <div class="logo">🍓</div>
       <div>
@@ -11,7 +28,7 @@
         aria-controls="side-panel">✕</button>
     </header>
 
-    <section class="block">
+    <section class="block" [hidden]="activeSection() !== 'models'">
       <h2>Models <small>A + B side by side</small></h2>
       @for (slot of slots; track slot) {
       <div class="slot-card" [class.active]="activeSlot() === slot">
@@ -55,7 +72,7 @@
       }
     </section>
 
-    <section class="block">
+    <section class="block" [hidden]="activeSection() !== 'pose'">
       <h2>Pose <small>head &amp; neck only</small></h2>
       <div class="segmented">
         @for (slot of slots; track slot) {
@@ -104,7 +121,7 @@
       </p>
       </section>
 
-    <section class="block">
+    <section class="block" [hidden]="activeSection() !== 'position'">
       <h2>Position <small>move each head · XYZ</small></h2>
       <div class="segmented">
         @for (slot of slots; track slot) {
@@ -130,7 +147,7 @@
       
       </section>
 
-    <section class="block">
+    <section class="block" [hidden]="activeSection() !== 'camera'">
       <h2>Camera</h2>
       <div class="presets">
         @for (preset of presets; track preset.id) {
@@ -202,9 +219,18 @@
       <p class="hint">Transparent + orthographic is handy for tracing over in your drawing app.</p>
       </section>
 
-    @if (activeInfo().expressions.length || activeInfo().morphs.length) {
-    <section class="block">
-      <h2>Face <small>slot {{ activeSlot() }} · optional</small></h2>
+    <section class="block" [hidden]="activeSection() !== 'face'">
+      <h2>Face <small>slot {{ activeSlot() }}</small></h2>
+      <div class="segmented">
+        @for (slot of slots; track slot) {
+        <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+          Model {{ slot }}
+        </button>
+        }
+      </div>
+      @if (!activeInfo().expressions.length && !activeInfo().morphs.length) {
+      <p class="hint">No expressions or blend shapes are available for this model.</p>
+      }
       @if (activeInfo().expressions.length) {
       <p class="sub">VRM expressions</p>
       @for (name of activeInfo().expressions.slice(0, 12); track name) {
@@ -226,15 +252,14 @@
         }
         }
         <button type="button" class="btn" (click)="resetFace()">Reset face</button>
-        </section>
-    }
+      </section>
 
     <footer class="status" [class.error]="status().startsWith('Load failed')">
       @if (busy()) { <span class="spinner"></span> }
       {{ status() }}
     </footer>
+    </div>
   </aside>
-  }
 
   <main class="viewport" #viewport [class.dragging]="dragging()" (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave()" (drop)="onDrop($event)">

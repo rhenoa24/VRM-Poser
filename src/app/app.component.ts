@@ -25,6 +25,8 @@ import {
   type StudioInfo,
 } from './vrm-poser';
 
+type ControlSection = 'models' | 'pose' | 'face' | 'position' | 'camera';
+
 const SAVED_MODELS = [
   { fileName: 'Ren 2026.vrm', name: 'Ren 2026' },
   { fileName: 'Tobio 2025 (C).vrm', name: 'Tobio 2025 (C)' },
@@ -79,6 +81,7 @@ export class App implements OnDestroy {
   readonly busy = signal(false);
   readonly dragging = signal(false);
   readonly panelOpen = signal(true);
+  readonly activeSection = signal<ControlSection>('models');
   readonly savedModels = signal<Record<SlotId, string>>({ ...DEFAULT_MODELS });
   readonly expressionValues = signal<Record<string, number>>({});
   readonly morphValues = signal<Record<string, number>>({});
@@ -171,6 +174,10 @@ export class App implements OnDestroy {
     if (!model) throw new Error(`Unknown saved model: ${fileName}`);
     const url = new URL(`models/${model.fileName}`, document.baseURI).href;
     return this.studio!.loadFromUrl(slotId, url, model.name);
+  }
+
+  selectSection(section: ControlSection): void {
+    this.activeSection.set(section);
   }
 
   togglePanel(): void {
