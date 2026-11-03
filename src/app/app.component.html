@@ -101,15 +101,7 @@
           </button>
           }
         </div>
-        <label class="check">
-          <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
-          <span>Look at Camera · Model {{ activeSlot() }}</span>
-        </label>
-        <div class="row">
-          <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
-        </div>
-        <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.
-        </p>
+
         @for (axis of axes; track axis) {
         <div class="slider-row">
           <label [attr.for]="'slider-' + axis">{{ axisLabel(axis) }}</label>
@@ -120,6 +112,12 @@
             (change)="setAngle(axis, $event)" />
         </div>
         }
+
+        <label class="check">
+          <input type="checkbox" [checked]="gizmoOn()" (change)="setGizmo($event)" />
+          <span>3D rotate gizmo + joint markers</span>
+        </label>
+
         <div class="row">
           <button type="button" class="btn" (click)="resetPose()">Reset active</button>
           <button type="button" class="btn" (click)="resetBothPoses()">Reset both</button>
@@ -133,13 +131,15 @@
           <label for="pose-file" class="btn">Load composition</label>
           <input id="pose-file" type="file" accept=".json,application/json" (change)="onPoseFile($event)" hidden />
         </div>
+
         <label class="check">
-          <input type="checkbox" [checked]="gizmoOn()" (change)="setGizmo($event)" />
-          <span>3D rotate gizmo + joint markers</span>
+          <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
+          <span>Look at Camera · Model {{ activeSlot() }}</span>
         </label>
-        <p class="hint">
-          Only <strong>2 posing bones per head</strong> are registered — no gizmos on arms, spine or
-          legs. Marker colours: A = orange/teal, B = pink/blue. Click one to switch head + bone.
+        <div class="row">
+          <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
+        </div>
+        <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.
         </p>
       </section>
 
