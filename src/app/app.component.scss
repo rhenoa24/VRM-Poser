@@ -114,10 +114,10 @@ h1 {
     letter-spacing: 0.2px;
 }
 
-.block {
-    border-top: 1px solid #2b3040;
-    padding-top: 14px;
-}
+// .block {
+//     border-top: 1px solid #2b3040;
+//     padding-top: 14px;
+// }
 
 h2 {
     margin: 0 0 12px;
@@ -213,9 +213,6 @@ h2 {
         flex: 1;
         padding: 9px;
         border-radius: 8px;
-        border: 1px solid #39415a;
-        background: #232939;
-        color: #c9cede;
         font: inherit;
         font-size: 12px;
         cursor: pointer;
@@ -333,7 +330,6 @@ h2 {
     margin-bottom: 12px;
 
     button {
-        background: #1d2230;
         font-size: 11px;
         padding: 7px;
     }
@@ -482,7 +478,7 @@ select {
     background: rgba(210, 43, 50, 0.14);
     border-left: 2px solid #d22b32;
     padding: 6px 8px;
-    margin: 10px 0 0;
+    margin-bottom: 10px;
     line-height: 1.4;
 }
 

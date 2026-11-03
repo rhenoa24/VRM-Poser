@@ -28,15 +28,6 @@
       </button>
     </nav>
     <div class="panel-content">
-      <header class="brand">
-        <div class="logo">🍓</div>
-        <div style="flex: 1">
-          <h1>VRM Poser</h1>
-          <p>Character Face Reference</p>
-        </div>
-        <button type="button" class="btn panel-close" (click)="togglePanel()" aria-label="Close controls"
-          aria-expanded="true" aria-controls="side-panel">✕</button>
-      </header>
 
       <section class="block" [hidden]="activeSection() !== 'models'">
         <h2>Models <small>A + B side by side</small></h2>
@@ -44,7 +35,7 @@
         @for (slot of slots; track slot) {
         <div class="slot-card" [class.active]="activeSlot() === slot">
           <div class="slot-head">
-            <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
+            <button type="button" class="slot-tag" (click)="selectSlot(slot)">Model {{ slot }}</button>
             <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
             <span class="slot-version">{{ slotInfo(slot).version }}</span>
           </div>
@@ -78,24 +69,37 @@
           <input id="spacing" type="range" min="0.6" max="4" step="0.05" [value]="spacing()"
             (input)="setSpacing($event)" />
         </div>
-        <p class="hint">Drag-and-drop a file anywhere on the viewport to load it into the active slot.</p>
+
         @if (info().message) {
         <p class="note">{{ info().message }}</p>
         }
+
+        <label class="check">
+          <input type="checkbox" [checked]="headOnly()" (change)="setHeadOnly($event)" />
+          <span>Head-only crop (hide both bodies)</span>
+        </label>
+        @if (headOnly()) {
+        <div class="slider-row compact">
+          <label for="crop-offset">Cut height</label>
+          <input id="crop-offset" type="range" min="-0.4" max="0.4" step="0.01" [value]="cropOffset()"
+            (input)="setCropOffset($event)" />
+        </div>
+        }
+
       </section>
 
       <section class="block" [hidden]="activeSection() !== 'pose'">
         <h2>Pose <small>head &amp; neck only</small></h2>
         <div class="segmented">
           @for (slot of slots; track slot) {
-          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-            Head {{ slot }}
+          <button type="button" class="btn" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Model {{ slot }}
           </button>
           }
         </div>
-        <div class="segmented bone-select">
+        <div class="segmented bone-select row">
           @for (bone of bones; track bone.id) {
-          <button type="button" [class.active]="selected() === bone.id"
+          <button type="button" class="btn" [class.primary]="selected() === bone.id"
             [disabled]="!activeInfo().bonesFound.includes(bone.id)" (click)="selectBone(bone.id)">
             {{ bone.label }}
           </button>
@@ -132,23 +136,14 @@
           <input id="pose-file" type="file" accept=".json,application/json" (change)="onPoseFile($event)" hidden />
         </div>
 
-        <label class="check">
-          <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
-          <span>Look at Camera · Model {{ activeSlot() }}</span>
-        </label>
-        <div class="row">
-          <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
-        </div>
-        <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.
-        </p>
       </section>
 
       <section class="block" [hidden]="activeSection() !== 'position'">
         <h2>Position <small>move each head · XYZ</small></h2>
         <div class="segmented">
           @for (slot of slots; track slot) {
-          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-            Head {{ slot }}
+          <button type="button" class="btn" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Model {{ slot }}
           </button>
           }
         </div>
@@ -189,10 +184,10 @@
           }
         </div>
         <div class="segmented projection">
-          <button type="button" [class.active]="projection() === 'perspective'" (click)="setProjection('perspective')">
+          <button type="button" class="btn" [class.active]="projection() === 'perspective'" (click)="setProjection('perspective')">
             Perspective
           </button>
-          <button type="button" [class.active]="projection() === 'orthographic'"
+          <button type="button" class="btn" [class.active]="projection() === 'orthographic'"
             (click)="setProjection('orthographic')">
             Orthographic
           </button>
@@ -213,18 +208,18 @@
         <div class="touch-row">
           <span class="touch-label">1 finger</span>
           <div class="segmented mini">
-            <button type="button" [class.active]="oneFinger() === 'rotate'"
+            <button type="button" class="btn" [class.active]="oneFinger() === 'rotate'"
               (click)="setOneFinger('rotate')">Rotate</button>
-            <button type="button" [class.active]="oneFinger() === 'pan'" (click)="setOneFinger('pan')">Pan
+            <button type="button" class="btn" [class.active]="oneFinger() === 'pan'" (click)="setOneFinger('pan')">Pan
               up/down</button>
           </div>
         </div>
         <div class="touch-row">
           <span class="touch-label">2 fingers</span>
           <div class="segmented mini">
-            <button type="button" [class.active]="twoFingers() === 'zoomPan'" (click)="setTwoFingers('zoomPan')">Zoom +
+            <button type="button" class="btn" [class.active]="twoFingers() === 'zoomPan'" (click)="setTwoFingers('zoomPan')">Zoom +
               pan</button>
-            <button type="button" [class.active]="twoFingers() === 'zoomRotate'"
+            <button type="button" class="btn" [class.active]="twoFingers() === 'zoomRotate'"
               (click)="setTwoFingers('zoomRotate')">Zoom +
               rotate</button>
           </div>
@@ -242,17 +237,7 @@
             <span>Transparent</span>
           </label>
         </div>
-        <label class="check">
-          <input type="checkbox" [checked]="headOnly()" (change)="setHeadOnly($event)" />
-          <span>Head-only crop (hide both bodies)</span>
-        </label>
-        @if (headOnly()) {
-        <div class="slider-row compact">
-          <label for="crop-offset">Cut height</label>
-          <input id="crop-offset" type="range" min="-0.4" max="0.4" step="0.01" [value]="cropOffset()"
-            (input)="setCropOffset($event)" />
-        </div>
-        }
+
         <button type="button" class="btn primary wide" (click)="savePng()">Save PNG (both heads)</button>
         <p class="hint">Transparent + orthographic is handy for tracing over in your drawing app.</p>
       </section>
@@ -261,11 +246,21 @@
         <h2>Face <small>slot {{ activeSlot() }}</small></h2>
         <div class="segmented">
           @for (slot of slots; track slot) {
-          <button type="button" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+          <button type="button" class="btn" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
             Model {{ slot }}
           </button>
           }
         </div>
+        <label class="check">
+          <input type="checkbox" [checked]="lookAtCamera()[activeSlot()]" (change)="setLookAtCamera($event)" />
+          <span>Look at Camera · Model {{ activeSlot() }}</span>
+        </label>
+        <div class="row">
+          <button type="button" class="btn" (click)="resetGaze()">Gaze Reset · Model {{ activeSlot() }}</button>
+        </div>
+        <p class="hint">Turning tracking off keeps this model’s last eye direction. Gaze Reset returns it to neutral.
+        </p>
+
         @if (!activeInfo().expressions.length && !activeInfo().morphs.length) {
         <p class="hint">No expressions or blend shapes are available for this model.</p>
         }
@@ -289,7 +284,9 @@
         </div>
         }
         }
-        <button type="button" class="btn" (click)="resetFace()">Reset face</button>
+        <div class="row">
+          <button type="button" class="btn" (click)="resetFace()">Reset face</button>
+        </div>
       </section>
 
       <footer class="status" [class.error]="status().startsWith('Load failed')">
@@ -304,6 +301,9 @@
     @if (!panelOpen()) {
     <button type="button" class="btn menu-toggle" (click)="togglePanel()" aria-label="Open controls"
       aria-expanded="false" aria-controls="side-panel">☰</button>
+    } @else {
+    <button type="button" class="btn menu-toggle" (click)="togglePanel()" aria-label="Close controls"
+      aria-expanded="true" aria-controls="side-panel">✕</button>
     }
     <div class="badge">{{ activeSlot() }} · {{ selected() | uppercase }} · {{ projection() }}</div>
     <div class="tips">
