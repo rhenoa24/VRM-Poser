@@ -40,31 +40,32 @@
 
       <section class="block" [hidden]="activeSection() !== 'models'">
         <h2>Models <small>A + B side by side</small></h2>
-        <div class="row">
-          @for (slot of slots; track slot) {
-          <div class="slot-card" [class.active]="activeSlot() === slot">
-            <div class="slot-head">
-              <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
-              <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
-              <span class="slot-version">{{ slotInfo(slot).version }}</span>
-            </div>
-            <div class="row saved-model-row">
-              <label class="saved-model-label" [attr.for]="'saved-model-' + slot">Saved model</label>
-              <select [id]="'saved-model-' + slot" [value]="savedModels()[slot]" (change)="setSavedModel(slot, $event)">
-                @for (model of savedModelsList; track model.fileName) {
-                <option [value]="model.fileName">{{ model.name }}</option>
-                }
-              </select>
-              <button type="button" class="btn small" (click)="loadSavedModel(slot)" [disabled]="busy()">Load
-                saved</button>
-              <label [attr.for]="'file-' + slot" class="btn primary">Load {{ slot }}</label>
-              <input [id]="'file-' + slot" type="file" accept=".vrm,.glb,.gltf" (change)="onFile(slot, $event)"
-                hidden />
-              <button type="button" class="btn" (click)="clearSlot(slot)">Clear</button>
-            </div>
+
+        @for (slot of slots; track slot) {
+        <div class="slot-card" [class.active]="activeSlot() === slot">
+          <div class="slot-head">
+            <button type="button" class="slot-tag" (click)="selectSlot(slot)">Slot {{ slot }}</button>
+            <span class="slot-name">{{ slotInfo(slot).modelName }}</span>
+            <span class="slot-version">{{ slotInfo(slot).version }}</span>
           </div>
-          }
+          <div class="row saved-model-row">
+            <label class="saved-model-label" [attr.for]="'saved-model-' + slot">Saved model</label>
+            <select [id]="'saved-model-' + slot" [value]="savedModels()[slot]" (change)="setSavedModel(slot, $event)">
+              @for (model of savedModelsList; track model.fileName) {
+              <option [value]="model.fileName">{{ model.name }}</option>
+              }
+            </select>
+            <button type="button" class="btn small" (click)="loadSavedModel(slot)" [disabled]="busy()">Load
+              saved</button>
+          </div>
+          <div class="row">
+            <label [attr.for]="'file-' + slot" class="btn primary">Load {{ slot }}</label>
+            <input [id]="'file-' + slot" type="file" accept=".vrm,.glb,.gltf" (change)="onFile(slot, $event)" hidden />
+            <button type="button" class="btn" (click)="clearSlot(slot)">Clear</button>
+          </div>
         </div>
+        }
+
         <div class="row">
           <button type="button" class="btn" (click)="duplicateAtoB()">Duplicate A → B</button>
         </div>

@@ -252,7 +252,7 @@ function makeSlot(id: SlotId): Slot {
         bones: {},
         pose: structuredClone(ZERO_POSE),
         offset: { ...ZERO_OFFSET },
-        modelScale: id === 'A' ? 0.9 : 1,
+        modelScale: 1,
         morphTargets: new Map(),
         expressionNames: [],
         source: null,
@@ -1240,7 +1240,7 @@ export class VrmStudio {
     };
 
     private updateMarkers(): void {
-        const size = Math.max(this.radius * (this.coarsePointer ? 0.09 : 0.055), 0.006);
+        const size = Math.max(this.radius * (this.coarsePointer ? 0.05: 0.05), 0);
         for (const marker of this.markerGroup.children) {
             const id = marker.userData['slot'] as SlotId;
             const bone = marker.userData['boneKey'] as BoneKey;
