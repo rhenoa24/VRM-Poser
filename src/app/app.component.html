@@ -169,6 +169,10 @@
             (change)="setOffset(axis, $event)" />
         </div>
         }
+        <label class="check">
+          <input type="checkbox" [checked]="moveGizmoOn()" (change)="setMoveGizmo($event)" />
+          <span>3D move gizmo (XYZ arrows)</span>
+        </label>
         <div class="row">
           <button type="button" class="btn" (click)="resetPositions()">Reset positions</button>
           <button type="button" class="btn" (click)="mirrorPositions()">Mirror A → B</button>

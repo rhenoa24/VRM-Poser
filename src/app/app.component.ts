@@ -84,6 +84,7 @@ export class App implements OnDestroy {
   readonly activeSlot = signal<SlotId>("A");
   readonly selected = signal<BoneKey>("head");
   readonly gizmoOn = signal(false);
+  readonly moveGizmoOn = signal(false);
   readonly lookAtCamera = signal<Record<SlotId, boolean>>({
     A: false,
     B: false,
@@ -440,6 +441,12 @@ export class App implements OnDestroy {
     const enabled = readChecked(event);
     this.gizmoOn.set(enabled);
     this.studio?.setGizmoEnabled(enabled);
+  }
+
+  setMoveGizmo(event: Event): void {
+    const enabled = readChecked(event);
+    this.moveGizmoOn.set(enabled);
+    this.studio?.setMoveGizmoEnabled(enabled);
   }
 
   setOneFinger(mode: OneFingerMode): void {
