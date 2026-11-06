@@ -59,20 +59,18 @@
 
         <div class="row">
           <button type="button" class="btn" (click)="duplicateAtoB()">Duplicate A → B</button>
+          <button type="button" class="btn" (click)="swapModels()" [disabled]="busy()">Swap A ⇄ B</button>
         </div>
         <div class="row">
           <button type="button" class="btn" (click)="loadTemplates()" [disabled]="busy()">Load selected for A +
             B</button>
         </div>
+
         <div class="slider-row compact">
           <label for="spacing">Head spacing</label>
           <input id="spacing" type="range" min="0.6" max="4" step="0.05" [value]="spacing()"
             (input)="setSpacing($event)" />
         </div>
-
-        @if (info().message) {
-        <p class="note">{{ info().message }}</p>
-        }
 
         <label class="check">
           <input type="checkbox" [checked]="headOnly()" (change)="setHeadOnly($event)" />
@@ -136,17 +134,6 @@
           <input id="pose-file" type="file" accept=".json,application/json" (change)="onPoseFile($event)" hidden />
         </div>
 
-      </section>
-
-      <section class="block" [hidden]="activeSection() !== 'position'">
-        <h2>Position <small>move each head · XYZ</small></h2>
-        <div class="segmented">
-          @for (slot of slots; track slot) {
-          <button type="button" class="btn" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
-            Model {{ slot }}
-          </button>
-          }
-        </div>
         <div class="slider-row compact model-scale-row">
           <label for="model-scale">Model {{ activeSlot() }} scale</label>
           <input id="model-scale" type="range" min="0.25" max="2.5" step="0.01" [value]="modelScales()[activeSlot()]"
@@ -159,6 +146,19 @@
             activeSlot() === 'A' ? '0.9×' : '1×' }})</button>
         </div>
         <p class="hint">Scale each model independently without changing the saved VRM.</p>
+
+      </section>
+
+      <section class="block" [hidden]="activeSection() !== 'position'">
+        <h2>Position <small>move each head · XYZ</small></h2>
+        <div class="segmented">
+          @for (slot of slots; track slot) {
+          <button type="button" class="btn" [class.active]="activeSlot() === slot" (click)="selectSlot(slot)">
+            Model {{ slot }}
+          </button>
+          }
+        </div>
+
         @for (axis of axes; track axis) {
         <div class="slider-row">
           <label [attr.for]="'offset-' + axis">{{ positionLabel(axis) }}</label>

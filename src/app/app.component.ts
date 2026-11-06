@@ -217,6 +217,19 @@ export class App implements OnDestroy {
     this.panelOpen.update((open) => !open);
   }
 
+  swapModels(): void {
+    if (!this.studio?.swapSlots()) return;
+    const swap = <T>(map: Record<SlotId, T>): Record<SlotId, T> => ({
+      A: map.B,
+      B: map.A,
+    });
+    this.lookAtCamera.update(swap);
+    this.modelScales.update(swap);
+    this.savedModels.update(swap);
+    this.expressionValues.update(swap);
+    this.morphValues.update(swap);
+  }
+
   async duplicateAtoB(): Promise<void> {
     await this.runLoad(() => this.studio!.duplicateAtoB(), ["B"]);
   }

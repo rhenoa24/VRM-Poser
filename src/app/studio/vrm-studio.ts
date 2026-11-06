@@ -281,6 +281,65 @@ export class VrmStudio {
     this.callbacks.onPose(this.getPose());
   }
 
+  /** Exchange the models in slots A and B together with their pose, scale,
+   *  face, gaze and source. Positions (offsets) stay with the slot, so the two
+   *  characters trade places in the layout. */
+  swapSlots(): boolean {
+    const a = this.slots.A;
+    const b = this.slots.B;
+    if (!a.root && !b.root) {
+      this.callbacks.onStatus("Nothing to swap — both slots are empty.");
+      return false;
+    }
+
+    this.gizmo.detach();
+    this.moveGizmo.detach();
+    if (a.root) a.wrapper.remove(a.root);
+    if (b.root) b.wrapper.remove(b.root);
+
+    const keys = [
+      "root",
+      "vrm",
+      "bones",
+      "pose",
+      "modelScale",
+      "morphTargets",
+      "expressionNames",
+      "source",
+      "objectUrl",
+      "neckOffsetY",
+      "headBoneY",
+      "headTopY",
+      "headCenterY",
+      "headHeight",
+      "info",
+    ] as const;
+    const swap = <K extends (typeof keys)[number]>(key: K): void => {
+      const tmp = a[key];
+      a[key] = b[key];
+      b[key] = tmp;
+    };
+    for (const key of keys) swap(key);
+    a.info = { ...a.info, id: "A" };
+    b.info = { ...b.info, id: "B" };
+
+    const gaze = this.lookAtCameraSlots.A;
+    this.lookAtCameraSlots.A = this.lookAtCameraSlots.B;
+    this.lookAtCameraSlots.B = gaze;
+
+    if (a.root) a.wrapper.add(a.root);
+    if (b.root) b.wrapper.add(b.root);
+    this.attachClipping(a);
+    this.attachClipping(b);
+
+    this.updateLayout();
+    this.syncGizmo();
+    this.emitInfo("Swapped model A and B.");
+    this.callbacks.onStatus("Swapped model A and B.");
+    this.callbacks.onPose(this.getPose());
+    return true;
+  }
+
   private install(slotId: SlotId, loaded: LoadedModel, name: string): void {
     const slot = this.slots[slotId];
     this.clearSlot(slotId);
