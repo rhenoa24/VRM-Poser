@@ -184,7 +184,8 @@
           }
         </div>
         <div class="segmented projection">
-          <button type="button" class="btn" [class.active]="projection() === 'perspective'" (click)="setProjection('perspective')">
+          <button type="button" class="btn" [class.active]="projection() === 'perspective'"
+            (click)="setProjection('perspective')">
             Perspective
           </button>
           <button type="button" class="btn" [class.active]="projection() === 'orthographic'"
@@ -217,7 +218,8 @@
         <div class="touch-row">
           <span class="touch-label">2 fingers</span>
           <div class="segmented mini">
-            <button type="button" class="btn" [class.active]="twoFingers() === 'zoomPan'" (click)="setTwoFingers('zoomPan')">Zoom +
+            <button type="button" class="btn" [class.active]="twoFingers() === 'zoomPan'"
+              (click)="setTwoFingers('zoomPan')">Zoom +
               pan</button>
             <button type="button" class="btn" [class.active]="twoFingers() === 'zoomRotate'"
               (click)="setTwoFingers('zoomRotate')">Zoom +
@@ -269,8 +271,8 @@
         @for (name of activeInfo().expressions.slice(0, 12); track name) {
         <div class="slider-row compact">
           <label [attr.for]="'exp-' + name">{{ name }}</label>
-          <input [id]="'exp-' + name" type="range" min="0" max="1" step="0.01" [value]="expressionValues()[name] || 0"
-            (input)="setExpression(name, $event)" />
+          <input [id]="'exp-' + name" type="range" min="0" max="1" step="0.01"
+            [value]="expressionValues()[activeSlot()][name] || 0" (input)="setExpression(name, $event)" />
         </div>
         }
         }
@@ -279,8 +281,8 @@
         @for (name of activeInfo().morphs.slice(0, 12); track name) {
         <div class="slider-row compact">
           <label [attr.for]="'morph-' + name">{{ name }}</label>
-          <input [id]="'morph-' + name" type="range" min="0" max="1" step="0.01" [value]="morphValues()[name] || 0"
-            (input)="setMorph(name, $event)" />
+          <input [id]="'morph-' + name" type="range" min="0" max="1" step="0.01"
+            [value]="morphValues()[activeSlot()][name] || 0" (input)="setMorph(name, $event)" />
         </div>
         }
         }

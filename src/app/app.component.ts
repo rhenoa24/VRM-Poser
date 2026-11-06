@@ -1,4 +1,4 @@
-import { UpperCasePipe } from '@angular/common';
+import { UpperCasePipe } from "@angular/common";
 import {
   afterNextRender,
   Component,
@@ -7,7 +7,7 @@ import {
   OnDestroy,
   signal,
   viewChild,
-} from '@angular/core';
+} from "@angular/core";
 import {
   VrmStudio,
   ZERO_OFFSET_MAP,
@@ -23,7 +23,7 @@ import {
   type TwoFingerMode,
   type SlotInfo,
   type StudioInfo,
-} from './studio';
+} from "./studio";
 import {
   BONES,
   CAMERA_PRESETS,
@@ -33,62 +33,90 @@ import {
   MIN_MODEL_SCALE,
   SAVED_MODELS,
   type ControlSection,
-} from './studio.config';
-import { readChecked, readNumber, readValue } from './dom-utils';
+} from "./studio.config";
+import { readChecked, readNumber, readValue } from "./dom-utils";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   imports: [UpperCasePipe],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss',
+  templateUrl: "./app.component.html",
+  styleUrl: "./app.component.scss",
 })
 export class App implements OnDestroy {
-  private readonly viewport = viewChild.required<ElementRef<HTMLDivElement>>('viewport');
+  private readonly viewport =
+    viewChild.required<ElementRef<HTMLDivElement>>("viewport");
   private studio: VrmStudio | null = null;
 
   readonly info = signal<StudioInfo>({
     slots: [
-      { id: 'A', modelName: 'empty', mode: 'empty', version: '—', bonesFound: [], expressions: [], morphs: [] },
-      { id: 'B', modelName: 'empty', mode: 'empty', version: '—', bonesFound: [], expressions: [], morphs: [] },
+      {
+        id: "A",
+        modelName: "empty",
+        mode: "empty",
+        version: "—",
+        bonesFound: [],
+        expressions: [],
+        morphs: [],
+      },
+      {
+        id: "B",
+        modelName: "empty",
+        mode: "empty",
+        version: "—",
+        bonesFound: [],
+        expressions: [],
+        morphs: [],
+      },
     ],
-    activeSlot: 'A',
+    activeSlot: "A",
     spacingRatio: 1.8,
     offsets: structuredClone(ZERO_OFFSET_MAP),
     layoutUnit: 0.2,
-    message: '',
+    message: "",
   });
   readonly activeInfo = computed<SlotInfo>(() => {
     const found = this.info().slots.find((s) => s.id === this.activeSlot());
     return found ?? this.info().slots[0];
   });
 
-  readonly status = signal('Starting WebGL…');
+  readonly status = signal("Starting WebGL…");
   readonly pose = signal<PoseMap>(structuredClone(ZERO_POSE_MAP));
-  readonly activeSlot = signal<SlotId>('A');
-  readonly selected = signal<BoneKey>('head');
+  readonly activeSlot = signal<SlotId>("A");
+  readonly selected = signal<BoneKey>("head");
   readonly gizmoOn = signal(false);
-  readonly lookAtCamera = signal<Record<SlotId, boolean>>({ A: false, B: false });
-  readonly modelScales = signal<Record<SlotId, number>>({ ...DEFAULT_MODEL_SCALES });
-  readonly projection = signal<Projection>('perspective');
-  readonly bgColor = signal('#20242f');
+  readonly lookAtCamera = signal<Record<SlotId, boolean>>({
+    A: false,
+    B: false,
+  });
+  readonly modelScales = signal<Record<SlotId, number>>({
+    ...DEFAULT_MODEL_SCALES,
+  });
+  readonly projection = signal<Projection>("perspective");
+  readonly bgColor = signal("#20242f");
   readonly transparentBg = signal(false);
   readonly headOnly = signal(false);
   readonly cropOffset = signal(0.03);
   readonly spacing = signal(1.8);
-  readonly oneFinger = signal<OneFingerMode>('rotate');
-  readonly twoFingers = signal<TwoFingerMode>('zoomPan');
+  readonly oneFinger = signal<OneFingerMode>("rotate");
+  readonly twoFingers = signal<TwoFingerMode>("zoomPan");
   readonly busy = signal(false);
   readonly dragging = signal(false);
   readonly panelOpen = signal(true);
-  readonly activeSection = signal<ControlSection>('models');
+  readonly activeSection = signal<ControlSection>("models");
   readonly savedModels = signal<Record<SlotId, string>>({ ...DEFAULT_MODELS });
-  readonly expressionValues = signal<Record<string, number>>({});
-  readonly morphValues = signal<Record<string, number>>({});
+  readonly expressionValues = signal<Record<SlotId, Record<string, number>>>({
+    A: {},
+    B: {},
+  });
+  readonly morphValues = signal<Record<SlotId, Record<string, number>>>({
+    A: {},
+    B: {},
+  });
 
   readonly maxOffset = MAX_OFFSET;
   readonly savedModelsList = SAVED_MODELS;
-  readonly axes: Axis[] = ['x', 'y', 'z'];
-  readonly slots: SlotId[] = ['A', 'B'];
+  readonly axes: Axis[] = ["x", "y", "z"];
+  readonly slots: SlotId[] = ["A", "B"];
   readonly bones = BONES;
   readonly presets = CAMERA_PRESETS;
 
@@ -116,8 +144,12 @@ export class App implements OnDestroy {
   async onFile(slotId: SlotId, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    input.value = '';
-    if (file) await this.runLoad(() => this.studio!.loadFromFile(slotId, file));
+    input.value = "";
+    if (file)
+      await this.runLoad(
+        () => this.studio!.loadFromFile(slotId, file),
+        [slotId],
+      );
   }
 
   onDragOver(event: DragEvent): void {
@@ -133,7 +165,10 @@ export class App implements OnDestroy {
     event.preventDefault();
     this.dragging.set(false);
     const file = event.dataTransfer?.files?.[0];
-    if (file) await this.runLoad(() => this.studio!.loadFromFile(this.activeSlot(), file));
+    if (file) {
+      const slot = this.activeSlot();
+      await this.runLoad(() => this.studio!.loadFromFile(slot, file), [slot]);
+    }
   }
 
   setSavedModel(slotId: SlotId, event: Event): void {
@@ -142,25 +177,32 @@ export class App implements OnDestroy {
   }
 
   async loadSavedModel(slotId: SlotId): Promise<void> {
-    await this.runLoad(() => this.loadSelectedModel(slotId));
+    await this.runLoad(() => this.loadSelectedModel(slotId), [slotId]);
   }
 
   async loadTemplates(): Promise<void> {
     await this.runLoad(async () => {
-      const results = await Promise.allSettled(this.slots.map((slot) => this.loadSelectedModel(slot)));
+      const results = await Promise.allSettled(
+        this.slots.map((slot) => this.loadSelectedModel(slot)),
+      );
       const failures = results.flatMap((result, index) => {
-        if (result.status === 'fulfilled') return [];
-        const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        if (result.status === "fulfilled") return [];
+        const reason =
+          result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
         const fileName = this.savedModels()[this.slots[index]];
         return [`${fileName}: ${reason}`];
       });
-      if (failures.length) throw new Error(failures.join('; '));
-    });
+      if (failures.length) throw new Error(failures.join("; "));
+    }, ["A", "B"]);
   }
 
   private loadSelectedModel(slotId: SlotId): Promise<void> {
     const fileName = this.savedModels()[slotId];
-    const model = SAVED_MODELS.find((candidate) => candidate.fileName === fileName);
+    const model = SAVED_MODELS.find(
+      (candidate) => candidate.fileName === fileName,
+    );
     if (!model) throw new Error(`Unknown saved model: ${fileName}`);
     const url = new URL(`models/${model.fileName}`, document.baseURI).href;
     return this.studio!.loadFromUrl(slotId, url, model.name);
@@ -175,22 +217,27 @@ export class App implements OnDestroy {
   }
 
   async duplicateAtoB(): Promise<void> {
-    await this.runLoad(() => this.studio!.duplicateAtoB());
+    await this.runLoad(() => this.studio!.duplicateAtoB(), ["B"]);
   }
 
   clearSlot(slotId: SlotId): void {
     this.studio?.clearSlot(slotId);
-    this.resetFaceValues();
+    this.resetFaceValues([slotId]);
   }
 
-  private async runLoad(task: () => Promise<void>): Promise<void> {
+  private async runLoad(
+    task: () => Promise<void>,
+    slots: SlotId[] = [this.activeSlot()],
+  ): Promise<void> {
     if (!this.studio) return;
     this.busy.set(true);
     try {
       await task();
-      this.resetFaceValues();
+      this.resetFaceValues(slots);
     } catch (error) {
-      this.status.set(`Load failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.status.set(
+        `Load failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       this.busy.set(false);
     }
@@ -244,19 +291,21 @@ export class App implements OnDestroy {
 
   savePose(): void {
     const composition = this.studio?.getComposition() ?? this.pose();
-    const blob = new Blob([JSON.stringify(composition, null, 2)], { type: 'application/json' });
-    this.downloadBlob(blob, 'two-head-composition.json');
+    const blob = new Blob([JSON.stringify(composition, null, 2)], {
+      type: "application/json",
+    });
+    this.downloadBlob(blob, "two-head-composition.json");
   }
 
   async onPoseFile(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    input.value = '';
+    input.value = "";
     if (!file) return;
     try {
       this.studio?.setPose(JSON.parse(await file.text()));
     } catch {
-      this.status.set('That pose file is not valid JSON.');
+      this.status.set("That pose file is not valid JSON.");
     }
   }
 
@@ -280,7 +329,10 @@ export class App implements OnDestroy {
     const input = event.target as HTMLInputElement;
     const scale = Number(input.value);
     if (!Number.isFinite(scale)) return;
-    const clampedScale = Math.min(MAX_MODEL_SCALE, Math.max(MIN_MODEL_SCALE, scale));
+    const clampedScale = Math.min(
+      MAX_MODEL_SCALE,
+      Math.max(MIN_MODEL_SCALE, scale),
+    );
     input.value = String(clampedScale);
     this.applyModelScale(clampedScale);
   }
@@ -293,7 +345,10 @@ export class App implements OnDestroy {
 
   resetModelScale(): void {
     const slot = this.activeSlot();
-    this.modelScales.update((scales) => ({ ...scales, [slot]: DEFAULT_MODEL_SCALES[slot] }));
+    this.modelScales.update((scales) => ({
+      ...scales,
+      [slot]: DEFAULT_MODEL_SCALES[slot],
+    }));
     this.studio?.setModelScale(slot, this.modelScales()[slot]);
   }
 
@@ -306,31 +361,51 @@ export class App implements OnDestroy {
   }
 
   positionLabel(axis: Axis): string {
-    return axis === 'x' ? 'X · left / right' : axis === 'y' ? 'Y · up / down' : 'Z · near / far';
+    return axis === "x"
+      ? "X · left / right"
+      : axis === "y"
+        ? "Y · up / down"
+        : "Z · near / far";
   }
 
   // -- face -----------------------------------------------------------------
 
   setExpression(name: string, event: Event): void {
     const weight = readNumber(event);
-    this.expressionValues.set({ ...this.expressionValues(), [name]: weight });
+    const slot = this.activeSlot();
+    this.expressionValues.update((v) => ({
+      ...v,
+      [slot]: { ...v[slot], [name]: weight },
+    }));
     this.studio?.setExpression(name, weight);
   }
 
   setMorph(name: string, event: Event): void {
     const weight = readNumber(event);
-    this.morphValues.set({ ...this.morphValues(), [name]: weight });
+    const slot = this.activeSlot();
+    this.morphValues.update((v) => ({
+      ...v,
+      [slot]: { ...v[slot], [name]: weight },
+    }));
     this.studio?.setMorph(name, weight);
   }
 
   resetFace(): void {
     this.studio?.resetFace();
-    this.resetFaceValues();
+    this.resetFaceValues([this.activeSlot()]);
   }
 
-  private resetFaceValues(): void {
-    this.expressionValues.set({});
-    this.morphValues.set({});
+  private resetFaceValues(slots: SlotId[]): void {
+    this.expressionValues.update((v) => {
+      const next = { ...v };
+      for (const slot of slots) next[slot] = {};
+      return next;
+    });
+    this.morphValues.update((v) => {
+      const next = { ...v };
+      for (const slot of slots) next[slot] = {};
+      return next;
+    });
   }
 
   // -- camera / appearance --------------------------------------------------
@@ -357,8 +432,8 @@ export class App implements OnDestroy {
   }
 
   orthoHeadView(): void {
-    this.projection.set('orthographic');
-    this.studio?.setOrthoHeadView('threeQuarter');
+    this.projection.set("orthographic");
+    this.studio?.setOrthoHeadView("threeQuarter");
   }
 
   setGizmo(event: Event): void {
@@ -404,7 +479,7 @@ export class App implements OnDestroy {
   savePng(): void {
     const url = this.studio?.screenshot();
     if (!url) return;
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `couple-reference-${Date.now()}.png`;
     link.click();
@@ -417,7 +492,11 @@ export class App implements OnDestroy {
   }
 
   axisLabel(axis: Axis): string {
-    return axis === 'x' ? 'Pitch · nod' : axis === 'y' ? 'Yaw · turn' : 'Roll · tilt';
+    return axis === "x"
+      ? "Pitch · nod"
+      : axis === "y"
+        ? "Yaw · turn"
+        : "Roll · tilt";
   }
 
   round(value: number): number {
@@ -430,7 +509,7 @@ export class App implements OnDestroy {
 
   private downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = filename;
     link.click();
